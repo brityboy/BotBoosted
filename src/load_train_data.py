@@ -20,7 +20,7 @@ def open_csv_file(filename):
     text_list = []
     with open(filename, 'r') as csvfile:
         # opencsvfile = csv.reader(codecs.open(filename, 'rU', 'utf-16'))
-        opencsvfile = csv.reader(csvfile)
+        opencsvfile = csv.reader(x.replace('\0', '').replace('\n', '') for x in csvfile)
             for row in opencsvfile:
                 text_list.append(row)
     return text_list
