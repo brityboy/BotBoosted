@@ -59,14 +59,41 @@ filename_dict = {ds1_genuine_tweets: 'hum_tw', ds2_e13_tweets: "e13_tw",
                  ds1_sb2_users: "sb2_us", ds1_sb3_users: "sb3_us",
                  ds1_ts1_users: "ts1_us", ds2_fsf_users: "fsf_us",
                  ds2_int_users: "int_us", ds2_twt_users: "twt_us"}
+label_dict = {ds1_genuine_tweets: 0, ds2_e13_tweets: 0,
+              ds2_tfp_tweets: 0, ds1_sb1_tweets: 1,
+              ds1_sb2_tweets: 1, ds1_sb3_tweets: 1,
+              ds1_ts1_tweets: 1, ds2_fsf_tweets: 1,
+              ds2_int_tweets: 1, ds2_twt_tweets: 1,
+              ds1_genuine_users: 0, ds2_e13_users: 0,
+              ds2_tfp_users: 0, ds1_sb1_users: 1,
+              ds1_sb2_users: 1, ds1_sb3_users: 1,
+              ds1_ts1_users: 1, ds2_fsf_users: 1,
+              ds2_int_users: 1, ds2_twt_users: 1}
+
 
 
 def load_data_into_dataframe(filename):
+    '''
+    INPUT
+         - filename: name of file
+    OUTPUT
+         - pandas DataFrame
+
+    returns contents of csv file into a dataframe
+    '''
     df = pd.read_csv(path)
     return df
 
 
 def open_text_file(filename):
+    '''
+    INPUT
+         - filename: name of file
+    OUTPUT
+         - np.array
+
+    returns contents of filename as objects in an array
+    '''
     text_list = []
     with open(filename) as f:
         for line in f:
@@ -75,19 +102,38 @@ def open_text_file(filename):
 
 
 def open_csv_file(filename):
+    '''
+    INPUT
+         - filename: name of file
+    OUTPUT
+         - list
+
+    returns csv file rows into a list
+    '''
     text_list = []
     with open(filename, 'r') as csvfile:
         # opencsvfile = csv.reader(codecs.open(filename, 'rU', 'utf-16'))
-        opencsvfile = csv.reader(x.replace('\0', '').replace('\n', '') for x in csvfile)
+        opencsvfile = csv.reader(x.replace('\0', '').replace('\n', '')
+                                 for x in csvfile)
         for row in opencsvfile:
             text_list.append(row)
     return text_list
 
 
 def open_csv_file_as_dataframe(filename):
+    '''
+    INPUT
+         - filename: name of file
+    OUTPUT
+         - pandas dataframe
+
+    returns contents of csv file, null bytes and other items removed
+    in a dataframe, with column headers
+    '''
     text_list = []
     with open(filename, 'r') as csvfile:
-        opencsvfile = csv.reader(x.replace('\0', '').replace('\n', '') for x in csvfile)
+        opencsvfile = csv.reader(x.replace('\0', '').replace('\n', '')
+                                 for x in csvfile)
         for row in opencsvfile:
             text_list.append(row)
     columns = text_list[0]
@@ -95,18 +141,10 @@ def open_csv_file_as_dataframe(filename):
     return df
 
 
-def brute_open_text_file_as_df(filename):
-    text_list = []
-    with open(filename, 'r') as f:
-        for line in f:
-            if len(line.split(',')) == 25:
-                text_list.append(line.replace('\n', '').split(','))
-    columns = text_list[0]
-    df = pd.DataFrame(text_list[1:], columns=columns)
-    return df
-
-
 def check_file_integrity(filelist):
+    '''
+    REWRITE THIS FUNCTION (LINES 136 TO 141 NEEDS REWRITING)
+    '''
     info_list = []
     for content in (filelist):
         df = open_csv_file_as_dataframe(content)
@@ -124,22 +162,20 @@ def check_file_integrity(filelist):
     checkdata.columns = [item[0] for item in info_list]
     return checkdata
 
+
 def give_basic_data_information(filename):
+    '''
+    INPUT
+         - filename: this is the file
+    OUTPUT
+         - prints the head, info and shape of a DataFrame
+
+    returns nothing
+    '''
     df = open_csv_file_as_dataframe(filename)
-    print df.head()
-    print df.info()
-    print df.shape
-
-
-def get_first_row_of_all_csv_files_in_a_set(file_list):
-    output_set = set
-    for file_name in file_list:
-        with open(file_name, 'r') as f:
-            first_line = f.readline()
-            first_line = set(first_line.replace('"', '').replace('\n', '').replace('\r', '').split(','))
-            # print first_line
-            output_set = output_set.union(first_line)
-    return output_set
+    print(df.head())
+    print(df.info())
+    print(df.shape)
 
 
 def get_first_row_of_all_csv_files_in_a_list(file_list):
@@ -153,14 +189,15 @@ def get_first_row_of_all_csv_files_in_a_list(file_list):
     return Counter(output_list)
 
 
-def extract_columns_from_multiple_csv_files_and_label_them(column_list, csv_list):
-    compiled_df = pd.DataFrame(columns=np.append(column_list, 'file'))
+def extract_columns_from_multiple_csvs(column_list, csv_list):
+    compiled_df = pd.DataFrame(columns=np.append(column_list, ['file', 'label']))
     for csv_file in csv_list:
-        print csv_file
+        print(csv_file)
         df = open_csv_file_as_dataframe(csv_file)
         df.columns = [c.replace('\n', '').replace('\r', '') for c in df.columns]
         df = df[column_list]
         df['file'] = filename_dict[csv_file]
+        df['label'] = label_dict[csv_file]
         compiled_df = pd.concat([compiled_df, df])
     return compiled_df
 
@@ -175,14 +212,7 @@ def get_intersection_columns_for_different_csv_files(checkdata):
 
 
 if __name__ == "__main__":
-    # checkdata = check_file_integrity(human_tweets+fake_tweets)
     checkdata = get_first_row_of_all_csv_files_in_a_list(human_tweets+fake_tweets)
     column_list = get_intersection_columns_for_different_csv_files(checkdata)
-    print column_list
-    compiled_df = extract_columns_from_multiple_csv_files_and_label_them(column_list, human_tweets+fake_tweets)
-    # dfh1 = open_csv_file_as_dataframe(ds1_genuine_users)
-    # df1 = open_csv_file_as_dataframe(ds1_ts1_users)
-    # df2 = open_csv_file_as_dataframe(ds2_fsf_users)
-    # dfh2 = open_csv_file_as_dataframe(ds2_e13_users)
-    # dfh2users = open_csv_file_as_dataframe(ds2_e13_users)
-    # give_basic_data_information(ds2_fsf_tweets)
+    print(column_list)
+    compiled_df = extract_columns_from_multiple_csvs(column_list, human_tweets+fake_tweets)
