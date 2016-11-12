@@ -122,11 +122,35 @@ def give_basic_data_information(filename):
     print df.shape
 
 
+def get_first_row_of_all_csv_files_in_a_list(file_list):
+    output_set = set
+    for file_name in file_list:
+        with open(file_name, 'r') as f:
+            first_line = f.readline()
+            first_line = set(first_line.replace('"', '').replace('\n', '').replace('\r', '').split(','))
+            # print first_line
+            output_set = output_set.union(first_line)
+    return output_set
+
+def extract_columns_from_multiple_csv_files_and_label_them(column_list, csv_list):
+    compiled_df = pd.DataFrame(columns=np.append(column_list, 'file'))
+    for csv_file in csv_list:
+        df = open_csv_file_as_dataframe(csv_file)
+        df = df[column_list]
+        df['file'] = csv_file
+        compiled_df = pd.concat([compiled_df, df])
+    return compiled_df
+
+def get_intersection_columns_for_different_csv_files(checkdata):
+    return np.array(checkdata.T.columns)[np.array(checkdata.T.sum() == checkdata.T.sum().max())]
+
 if __name__ == "__main__":
-    # checkdata = check_file_integrity(human_users+fake_users)
-    dfh1 = open_csv_file_as_dataframe(ds1_genuine_users)
-    df1 = open_csv_file_as_dataframe(ds1_ts1_users)
-    df2 = open_csv_file_as_dataframe(ds2_fsf_users)
-    dfh2 = open_csv_file_as_dataframe(ds2_e13_users)
+    checkdata = check_file_integrity(human_tweets+fake_tweets)
+    column_list = get_intersection_columns_for_different_csv_files(checkdata)
+    compiled_df = extract_columns_from_multiple_csv_files_and_label_them(column_list, human_users+fake_users)
+    # dfh1 = open_csv_file_as_dataframe(ds1_genuine_users)
+    # df1 = open_csv_file_as_dataframe(ds1_ts1_users)
+    # df2 = open_csv_file_as_dataframe(ds2_fsf_users)
+    # dfh2 = open_csv_file_as_dataframe(ds2_e13_users)
     # dfh2users = open_csv_file_as_dataframe(ds2_e13_users)
     # give_basic_data_information(ds2_fsf_tweets)
