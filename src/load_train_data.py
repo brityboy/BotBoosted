@@ -123,5 +123,10 @@ def give_basic_data_information(filename):
 
 
 if __name__ == "__main__":
-    checkdata = check_file_integrity(human_tweets+fake_tweets)
+    # checkdata = check_file_integrity(human_users+fake_users)
+    dfh1 = open_csv_file_as_dataframe(ds1_genuine_users)
+    df1 = open_csv_file_as_dataframe(ds1_ts1_users)
+    df2 = open_csv_file_as_dataframe(ds2_fsf_users)
+    dfh2 = open_csv_file_as_dataframe(ds2_e13_users)
+    # dfh2users = open_csv_file_as_dataframe(ds2_e13_users)
     # give_basic_data_information(ds2_fsf_tweets)
