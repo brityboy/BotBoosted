@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import csv
 # import codecs
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 
 ds1_genuine_tweets = 'data/datasets_full.csv/genuine_accounts.csv/tweets.csv'
@@ -50,6 +50,16 @@ fake_tweets = [ds1_sb1_tweets, ds1_sb2_tweets, ds1_sb3_tweets,
 human_users = [ds1_genuine_users, ds2_e13_users, ds2_tfp_users]
 fake_users = [ds1_sb1_users, ds1_sb2_users, ds1_sb3_users, ds1_ts1_users,
               ds2_fsf_users, ds2_int_users, ds2_twt_users]
+filename_dict = {ds1_genuine_tweets: 'hum_tw', ds2_e13_tweets: "e13_tw",
+                 ds2_tfp_tweets: "tfp_tw", ds1_sb1_tweets: "sb1_tw",
+                 ds1_sb2_tweets: "sb2_tw", ds1_sb3_tweets: "sb3_tw",
+                 ds1_ts1_tweets: "ts1_tw", ds2_fsf_tweets: "fsf_tw",
+                 ds2_int_tweets: "int_tw", ds2_twt_tweets: "twt_tw",
+                 ds1_genuine_users: "hum1_us", ds2_e13_users: "e13_us",
+                 ds2_tfp_users: "tfp_us", ds1_sb1_users: "sb1_us",
+                 ds1_sb2_users: "sb2_us", ds1_sb3_users: "sb3_us",
+                 ds1_ts1_users: "ts1_us", ds2_fsf_users: "fsf_us",
+                 ds2_int_users: "int_us", ds2_twt_users: "twt_us"}
 
 
 def load_data_into_dataframe(filename):
@@ -122,7 +132,7 @@ def give_basic_data_information(filename):
     print df.shape
 
 
-def get_first_row_of_all_csv_files_in_a_list(file_list):
+def get_first_row_of_all_csv_files_in_a_set(file_list):
     output_set = set
     for file_name in file_list:
         with open(file_name, 'r') as f:
@@ -132,22 +142,45 @@ def get_first_row_of_all_csv_files_in_a_list(file_list):
             output_set = output_set.union(first_line)
     return output_set
 
+
+def get_first_row_of_all_csv_files_in_a_list(file_list):
+    output_list = []
+    for file_name in file_list:
+        with open(file_name, 'r') as f:
+            first_line = f.readline()
+            first_line = first_line.replace('"', '').replace('\n', '').replace('\r', '').split(',')
+            # print first_line
+            output_list += first_line
+    return Counter(output_list)
+
+
 def extract_columns_from_multiple_csv_files_and_label_them(column_list, csv_list):
     compiled_df = pd.DataFrame(columns=np.append(column_list, 'file'))
     for csv_file in csv_list:
+        print csv_file
         df = open_csv_file_as_dataframe(csv_file)
+        df.columns = [c.replace('\n', '').replace('\r', '') for c in df.columns]
         df = df[column_list]
-        df['file'] = csv_file
+        df['file'] = filename_dict[csv_file]
         compiled_df = pd.concat([compiled_df, df])
     return compiled_df
 
+
 def get_intersection_columns_for_different_csv_files(checkdata):
-    return np.array(checkdata.T.columns)[np.array(checkdata.T.sum() == checkdata.T.sum().max())]
+    column_list = []
+    maxval = max(checkdata.values())
+    for k, v in checkdata.iteritems():
+        if v == maxval:
+            column_list.append(k)
+    return column_list
+
 
 if __name__ == "__main__":
-    checkdata = check_file_integrity(human_tweets+fake_tweets)
+    # checkdata = check_file_integrity(human_tweets+fake_tweets)
+    checkdata = get_first_row_of_all_csv_files_in_a_list(human_tweets+fake_tweets)
     column_list = get_intersection_columns_for_different_csv_files(checkdata)
-    compiled_df = extract_columns_from_multiple_csv_files_and_label_them(column_list, human_users+fake_users)
+    print column_list
+    compiled_df = extract_columns_from_multiple_csv_files_and_label_them(column_list, human_tweets+fake_tweets)
     # dfh1 = open_csv_file_as_dataframe(ds1_genuine_users)
     # df1 = open_csv_file_as_dataframe(ds1_ts1_users)
     # df2 = open_csv_file_as_dataframe(ds2_fsf_users)
