@@ -40,10 +40,9 @@ def extract_features_from_tweet_csv_files(csv_list):
     OUTPUT
          - df
 
-    returns a dataframe with the screen_name and id of the user, along
-    with specified feature columns which are going to be done line by line so
-    as not to be memory intensive (the mongodb will be handled this way
-    as well). This approach will be taken and multiprocessing and threading
+    returns a nested dictionary where the key is the username, the values are
+    the features, and then the values of the feature keys are the values
+    This approach will be taken and multiprocessing and threading
     will be used if possible in order to speed up the extraction from both
     the csv files and the mongo databases
     targets to extract right now are:
