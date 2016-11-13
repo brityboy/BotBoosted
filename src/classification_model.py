@@ -8,6 +8,7 @@ from imblearn.over_sampling import RandomOverSampler, SMOTE
 from sklearn.cluster import DBSCAN
 import numpy as np
 import dill as pickle
+import pandas as pd
 
 
 def evaluate_model(model, X_train, y_train):
@@ -112,13 +113,14 @@ def write_model_to_pkl(model, model_name):
 
 if __name__ == "__main__":
     df = pd.read_csv('data/training_df.csv')
+    df.drop('Unnamed: 0', axis=1, inplace=True)
     user_id_array = df.pop('id')
     y = df.pop('label')
     X = df.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
     model = RandomForestClassifier(n_jobs=-1)
     model = evaluate_model(model, X_train, y_train)
-    print("this is the model performance on the training data\n")
+    print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train, y_train)
     print("this is the model performance on the test data\n")
     view_classification_report(model, X_test, y_test)
