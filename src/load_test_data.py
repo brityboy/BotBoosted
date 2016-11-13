@@ -197,7 +197,7 @@ def write_dict_to_pkl(dict_object, dict_name):
 
 if __name__ == "__main__":
     df = create_processed_dataframe_from_mongo('trumpmillion')
-    df.to_csv('data/trumpmillion.csv')
+    df.to_csv('data/trumpmillion.csv', index=None)
     # dbname = 'clintonmillion'
     # df = extract_user_information_from_mongo(dbname, 'topictweets')
     # feature_dict = extract_feature_information_from_mongo(dbname,
