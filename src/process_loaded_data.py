@@ -38,7 +38,7 @@ def extract_features_from_tweet_csv_files(csv_list):
     INPUT
          - csv_list: list of csv files
     OUTPUT
-         - df
+         - dictionary
 
     returns a nested dictionary where the key is the username, the values are
     the features, and then the values of the feature keys are the values
@@ -50,16 +50,12 @@ def extract_features_from_tweet_csv_files(csv_list):
     get total number of times a users tweet has been
     favorited (sum favorite_count)
     csv - favorite_count
-    mongo - favorite_count
     b) has used a hashtag in the tweet
     csv - num_hashtags
-    mongo - len(document['entities']['hashtags'])
     c) has logged into twitter via iphone (source)
     csv - source
-    mongo - source
     d) has mentioned another user
     csv - num_mentions
-    mongo - len(document['entities']['user_mentions'])
     '''
     result = defaultdict(defaultdict)
     for csv_file in csv_list:
