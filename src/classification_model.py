@@ -7,6 +7,7 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import RandomOverSampler, SMOTE
 from sklearn.cluster import DBSCAN
 import numpy as np
+import dill as pickle
 
 
 def evaluate_model(model, X_train, y_train):
@@ -96,12 +97,28 @@ def check_classifier_with_different_test_subsamples(model, X_test, y_test):
     pass
 
 
+def write_model_to_pkl(model_name):
+    '''
+    INPUT
+         - model_name: str, this is the name of the model
+    OUTPUT
+         - saves the model to a pkl file
+    Returns None
+    '''
+    with open('models/{}_model.pkl'.format(model_name), 'w+') as f:
+        pickle.dump(model, f)
+
+
 if __name__ == "__main__":
-    df = create_processed_dataframe()
+    df = pd.read_csv('data/training_df.csv')
     user_id_array = df.pop('id')
     y = df.pop('label')
     X = df.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
-    model = RandomForestClassifier()
+    model = RandomForestClassifier(n_jobs=-1)
     model = evaluate_model(model, X_train, y_train)
+    print("this is the model performance on the training data\n")
+    view_classification_report(model, X_train, y_train)
+    print("this is the model performance on the test data\n")
     view_classification_report(model, X_test, y_test)
+    write_model_to_pkl('vanilla_random_forest')
