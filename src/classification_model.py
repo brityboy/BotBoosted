@@ -16,11 +16,13 @@ def evaluate_model(model, X_train, y_train):
          - X_train: 2d array of the features
          - y_train: 1d array of the target
     OUTPUT
-         - information about the model's accuracy using 10 fold cross validation
+         - information about the model's accuracy using 10
+         fold cross validation
          - model: the fit model
     Returns the model
     '''
-    print(np.mean(cross_val_score(model, X_train, y_train, cv=10, n_jobs=-1, verbose=10)))
+    print(np.mean(cross_val_score(model, X_train, y_train,
+                                  cv=10, n_jobs=-1, verbose=10)))
     model.fit(X_train, y_train)
     return model
 
