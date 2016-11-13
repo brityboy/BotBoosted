@@ -1,8 +1,9 @@
 from unidecode import unidecode
 from pymongo import MongoClient
-from timeit import Timer
 from collections import defaultdict
 import pandas as pd
+from process_loaded_data import *
+import dill as pickle
 
 
 def get_username_list_from_mongo(dbname, collectionname):
@@ -115,10 +116,70 @@ def extract_feature_information_from_mongo(dbname, collectionname):
     return result
 
 
+def process_feature_information_for_modelling(df):
+    '''
+    INPUT
+         - df: pandas dataframe where user info has been matched with
+         the features dict
+    OUTPUT
+         - df
+
+    Returns the modified features from the feature dict into the dataframe
+    '''
+    df = combine_user_info_with_feature_dict(df, feature_dict)
+    df['favorited_by_another'] = \
+        df.twt_favorite_count.apply(lambda favcnt: 1 if favcnt > 0 else 0)
+    df['has_hashtagged'] = \
+        df.num_hashtags.apply(lambda hashtag: 1 if hashtag > 0 else 0)
+    df['used_iphone'] = \
+        df.iphone_source.apply(lambda iphone: 1 if iphone > 0 else 0)
+    df['has_mentions'] = \
+        df.num_mentions.apply(lambda mentions: 1 if mentions > 0 else 0)
+    return df
+
+def drop_unnecessary_columns_from_test_data(df):
+    '''
+    INPUT
+         - df: pandas dataframe where the features have already been built
+    OUTPUT
+         - df
+    Returns a dataframe where the unnecessary features have already been
+    dropped
+    '''
+
+    df.drop(['twt_favorite_count', 'num_hashtags', 'iphone_source',
+             'num_mentions'], axis=1, inplace=True)
+    df = df[['id', 'has_30_followers', 'geo_localized', 'favorited_by_another',
+             'has_hashtagged', 'used_iphone', 'has_mentions',
+             'followers_friends']]
+    return df
+
+
+def create_processed_dataframe_from_mongo(dbname):
+    '''
+    INPUT
+         - dbname: this is the name of the mongo database where the
+         information will be extracted from
+    OUTPUT
+         - df
+
+    Returns a dataframe that has everything needed in order to do modelling
+    '''
+    df = extract_user_information_from_mongo(dbname, 'topictweets')
+    feature_dict = extract_feature_information_from_mongo(dbname,
+                                                          'timelinetweets')
+    users_who_tweeted = set(feature_dict.keys())
+    dfusers_who_tweeted = df[df.id.isin(users_who_tweeted)]
+    # subset the initial user dataframe to have ONLY the users who tweeted
+    df = combine_user_info_with_feature_dict(dfusers_who_tweeted, feature_dict)
+    df = process_feature_information_for_modelling(df)
+    df = drop_unnecessary_columns_from_test_data(df)
+    return df
+
+
 if __name__ == "__main__":
-    # t = Timer(lambda: extract_user_information_from_mongo
-            #   ('clintonmillion', 'topictweets'))
-    # print("Completed sequential in %s seconds." % t.timeit(1))
-    df = extract_user_information_from_mongo('clintonmillion', 'topictweets')
-    result = extract_feature_information_from_mongo('clintonmillion',
-                                                    'topictweets')
+    # df = create_processed_dataframe_from_mongo('clintonmillion')
+    dbname = 'clintonmillion'
+    df = extract_user_information_from_mongo(dbname, 'topictweets')
+    feature_dict = extract_feature_information_from_mongo(dbname,
+                                                          'timelinetweets')
