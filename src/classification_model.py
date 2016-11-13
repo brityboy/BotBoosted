@@ -97,10 +97,11 @@ def check_classifier_with_different_test_subsamples(model, X_test, y_test):
     pass
 
 
-def write_model_to_pkl(model_name):
+def write_model_to_pkl(model, model_name):
     '''
     INPUT
          - model_name: str, this is the name of the model
+         - model: the sklearn classification model that will be saved
     OUTPUT
          - saves the model to a pkl file
     Returns None
@@ -121,4 +122,4 @@ if __name__ == "__main__":
     view_classification_report(model, X_train, y_train)
     print("this is the model performance on the test data\n")
     view_classification_report(model, X_test, y_test)
-    write_model_to_pkl('vanilla_random_forest')
+    write_model_to_pkl(model, 'vanilla_random_forest')
