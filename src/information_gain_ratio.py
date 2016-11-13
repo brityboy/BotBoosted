@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from collections import Counter
-# import fraud_detection as fd
 
 
 def check_if_categorical(attribute, df):
@@ -267,9 +266,6 @@ def load_labor_negotiations_data():
 if __name__ == "__main__":
     # df, X, y = load_contraceptive_data()
     df, X, y = load_play_golf()
-    # df = fd.load_data('data/creditcardfraud.zip')
-    # y = fd.get_y(df, 'result')
-    # df, X = fd.get_x(df)
     # impurity_criterion = entropy
     # error_threshold = 0
     print('information_gain')
