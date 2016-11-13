@@ -156,6 +156,13 @@ def give_basic_data_information(filename):
 
 
 def get_first_row_of_all_csv_files_in_a_list(file_list):
+    '''
+    INPUT
+         - file_list: list of csv files
+    OUTPUT
+         - dictionary which has keys as columns and values as number of files
+         these columns occur in
+    '''
     output_list = []
     for file_name in file_list:
         with open(file_name, 'r') as f:
@@ -168,6 +175,13 @@ def get_first_row_of_all_csv_files_in_a_list(file_list):
 
 
 def extract_columns_from_multiple_csvs(column_list, csv_list):
+    '''
+    INPUT
+         - column_list: list of columns to extract from the different csvs
+         - csv_list: list of the different csvs to get the data from
+    OUTPUT
+         - compiled_df: a dataframe that has all the columns from the csvs
+    '''
     compiled_df = pd.DataFrame(columns=np.append(column_list,
                                                  ['file', 'label']))
     for csv_file in csv_list:
@@ -183,6 +197,14 @@ def extract_columns_from_multiple_csvs(column_list, csv_list):
 
 
 def get_intersection_columns_for_different_csv_files(checkdata):
+    '''
+    INPUT
+        - checkdata: a dictionary that has the keys as columns and the values
+        as the number of csv files they occur in
+    OUTPUT
+         - column_list: a list of columns that has the columns which occur
+         in all csv files
+    '''
     column_list = []
     maxval = max(checkdata.values())
     for k, v in checkdata.iteritems():
