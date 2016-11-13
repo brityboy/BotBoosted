@@ -116,7 +116,7 @@ def extract_feature_information_from_mongo(dbname, collectionname):
     return result
 
 
-def process_feature_information_for_modelling(df):
+def process_feature_information_for_modelling(df, feature_dict):
     '''
     INPUT
          - df: pandas dataframe where user info has been matched with
@@ -136,6 +136,7 @@ def process_feature_information_for_modelling(df):
     df['has_mentions'] = \
         df.num_mentions.apply(lambda mentions: 1 if mentions > 0 else 0)
     return df
+
 
 def drop_unnecessary_columns_from_test_data(df):
     '''
@@ -166,20 +167,38 @@ def create_processed_dataframe_from_mongo(dbname):
     Returns a dataframe that has everything needed in order to do modelling
     '''
     df = extract_user_information_from_mongo(dbname, 'topictweets')
+    # df = pd.read_csv('data/clinton_df.csv')
+    # df.id = df.id.apply(str)
     feature_dict = extract_feature_information_from_mongo(dbname,
                                                           'timelinetweets')
+    # with open('data/clinton_tweets_dict.pkl', 'r') as f:
+    #     feature_dict = pickle.load(f)
+    df = df.drop_duplicates(subset='id', keep='last')
     users_who_tweeted = set(feature_dict.keys())
     dfusers_who_tweeted = df[df.id.isin(users_who_tweeted)]
     # subset the initial user dataframe to have ONLY the users who tweeted
     df = combine_user_info_with_feature_dict(dfusers_who_tweeted, feature_dict)
-    df = process_feature_information_for_modelling(df)
+    df = process_feature_information_for_modelling(df, feature_dict)
     df = drop_unnecessary_columns_from_test_data(df)
     return df
 
 
+def write_dict_to_pkl(dict_object, dict_name):
+    '''
+    INPUT
+         - dict_name: str, this is the name of the dictionary
+    OUTPUT
+         - saves the model to a pkl file
+    Returns None
+    '''
+    with open('data/{}_dict.pkl'.format(dict_name), 'w+') as f:
+        pickle.dump(dict_object, f)
+
+
 if __name__ == "__main__":
-    # df = create_processed_dataframe_from_mongo('clintonmillion')
-    dbname = 'clintonmillion'
-    df = extract_user_information_from_mongo(dbname, 'topictweets')
-    feature_dict = extract_feature_information_from_mongo(dbname,
-                                                          'timelinetweets')
+    df = create_processed_dataframe_from_mongo('trumpmillion')
+    df.to_csv('data/trumpmillion.csv')
+    # dbname = 'clintonmillion'
+    # df = extract_user_information_from_mongo(dbname, 'topictweets')
+    # feature_dict = extract_feature_information_from_mongo(dbname,
+    #                                                       'timelinetweets')
