@@ -223,11 +223,9 @@ def create_processed_dataframe():
                                             fake_users)
     feature_dict = \
         extract_features_from_tweet_csv_files(human_tweets+fake_tweets)
-    # users_with_userdata = set(df.id)
     users_who_tweeted = set(feature_dict.keys())
-    # users_without_tweets = users_with_userdata - users_who_tweeted
+    # subset the initial user dataframe to have ONLY the users who tweeted
     dfusers_who_tweeted = df[df.id.isin(users_who_tweeted)]
-    #  dfusers_no_tweets = df[df.id.isin(users_without_tweets)]
     df = combine_user_info_with_feature_dict(dfusers_who_tweeted, feature_dict)
     df = process_df(df)
     return df
