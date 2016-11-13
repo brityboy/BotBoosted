@@ -96,6 +96,10 @@ def extract_feature_information_from_mongo(dbname, collectionname):
     tab = db[collectionname].find()
     for document in tab:
         user_id = str(document['user']['id'])
+        favorite_count = document['favorite_count']
+        num_hashtags = len(document['entities']['hashtags'])
+        iphone_source = 1 if 'iPhone' in document['source'] else 0
+        num_mentions = len(document['entities']['user_mentions'])
         if 'favorite_count' not in result[user_id]:
             result[user_id]['favorite_count'] = 0
         if 'num_hashtags' not in result[user_id]:
@@ -104,23 +108,11 @@ def extract_feature_information_from_mongo(dbname, collectionname):
             result[user_id]['iphone_source'] = 0
         if 'num_mentions' not in result[user_id]:
             result[user_id]['num_mentions'] = 0
-        if row[14] in ['0', 'NULL']:
-            result[user_id]['favorite_count'] += 0
-        else:
-            result[user_id]['favorite_count'] += int(row[14])
-        if row[15] in ['0', 'NULL']:
-            result[user_id]['num_hashtags'] += 0
-        else:
-            result[user_id]['num_hashtags'] += int(row[15])
-        if 'iPhone' in row[3]:
-            result[user_id]['iphone_source'] += 1
-        else:
-            result[user_id]['iphone_source'] += 0
-        if row[17] in ['0', 'NULL']:
-            result[user_id]['num_mentions'] += 0
-        else:
-            result[user_id]['num_mentions'] += int(row[17])
-    pass
+        result[user_id]['favorite_count'] += favorite_count
+        result[user_id]['num_hashtags'] += num_hashtags
+        result[user_id]['iphone_source'] += iphone_source
+        result[user_id]['num_mentions'] += num_mentions
+    return result
 
 
 if __name__ == "__main__":
@@ -128,3 +120,5 @@ if __name__ == "__main__":
             #   ('clintonmillion', 'topictweets'))
     # print("Completed sequential in %s seconds." % t.timeit(1))
     df = extract_user_information_from_mongo('clintonmillion', 'topictweets')
+    result = extract_feature_information_from_mongo('clintonmillion',
+                                                    'topictweets')
