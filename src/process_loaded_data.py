@@ -75,11 +75,13 @@ def extract_features_from_tweet_csv_files(csv_list):
     '''
     result = defaultdict(defaultdict)
     for csv_file in csv_list:
+        print csv_file
         with open(csv_file, 'r') as csvfile:
             next(csvfile)
             opencsvfile = csv.reader(x.replace('\0', '').replace('\n', '')
                                      for x in csvfile)
-            for row in opencsvfile:
+            for i, row in enumerate(opencsvfile):
+                print csv_file, i
                 if len(row) == 19:
                     if 'favorite_count' not in result[row[4]]:
                         result[row[4]]['favorite_count'] = 0
@@ -89,11 +91,11 @@ def extract_features_from_tweet_csv_files(csv_list):
                         result[row[4]]['iphone_source'] = 0
                     if 'num_mentions' not in result[row[4]]:
                         result[row[4]]['num_mentions'] = 0
-                    if row[14] == '0':
+                    if row[14] in ['0', 'NULL']:
                         result[row[4]]['favorite_count'] += 0
                     else:
                         result[row[4]]['favorite_count'] += int(row[14])
-                    if row[15] == '0':
+                    if row[15] in ['0', 'NULL']:
                         result[row[4]]['num_hashtags'] += 0
                     else:
                         result[row[4]]['num_hashtags'] += int(row[15])
@@ -101,18 +103,20 @@ def extract_features_from_tweet_csv_files(csv_list):
                         result[row[4]]['iphone_source'] += 1
                     else:
                         result[row[4]]['iphone_source'] += 0
-                    if row[17] == '0':
+                    if row[17] in ['0', 'NULL']:
                         result[row[4]]['num_mentions'] += 0
                     else:
                         result[row[4]]['num_mentions'] += int(row[17])
                 elif len(row) == 25:
                     pass
+    csvfile.close()
     return result
 
 if __name__ == "__main__":
-    column_list = ['id', 'geo_enabled', 'followers_count',
-                   'friends_count', 'statuses_count', 'listed_count',
-                   'favourites_count', 'created_at']
-    df = extract_columns_from_multiple_csvs(column_list,
-                                            human_users +
-                                            fake_users)
+    # column_list = ['id', 'geo_enabled', 'followers_count',
+    #                'friends_count', 'statuses_count', 'listed_count',
+    #                'favourites_count', 'created_at']
+    # df = extract_columns_from_multiple_csvs(column_list,
+    #                                         human_users +
+    #                                         fake_users)
+    result = extract_features_from_tweet_csv_files([ds2_e13_tweets, ds2_int_tweets, ds2_tfp_tweets, ds2_twt_tweets, ds2_fsf_tweets])
