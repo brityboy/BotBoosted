@@ -1,6 +1,6 @@
 from information_gain_ratio import *
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import GaussianNB
 from sklearn.cross_validation import train_test_split, cross_val_score
 from process_loaded_data import *
 from sklearn.metrics import classification_report
@@ -11,6 +11,7 @@ import numpy as np
 import dill as pickle
 import pandas as pd
 from evaltestcvbs import EvalTestCVBS as Eval
+import information_gain_ratio as igr
 
 
 def evaluate_model(model, X_train, y_train):
@@ -131,6 +132,25 @@ def view_feature_importances(df, model):
                        'Importances']).sort_values(by='Importances',
                                                    ascending=False))
 
+
+def get_igr_attribute_weights(X_train_b, y_train_b, df):
+    '''
+    INPUT
+         - X_train_b: 2d array of features from balanced class values
+         - y_train b: 1d array of balanced y values
+         - df: original dataframe from which data was loaded
+    OUTPUT
+         - numpy array
+    Returns an array of the different attribute weights
+    '''
+    bdf = pd.DataFrame(X_train_b, columns=df.columns)
+    weights = []
+    for attribute in bdf.columns:
+        weights.append(igr.information_gain_ratio_categorical(attribute,
+                                                              bdf,
+                                                              y_train_b))
+    return np.array(weights)
+
 if __name__ == "__main__":
     df = pd.read_csv('data/training_df.csv')
     df.drop('Unnamed: 0', axis=1, inplace=True)
@@ -141,8 +161,10 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
     X_train_b, y_train_b = balance_classes(RandomUnderSampler(),
                                            X_train, y_train)
+    weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
+    X_train_b = X_train_b * weights
     model = RandomForestClassifier(n_jobs=-1)
-    # model = MultinomialNB()
+    # model = GaussianNB()
     model = evaluate_model(model, X_train_b, y_train_b)
     print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train_b, y_train_b)
