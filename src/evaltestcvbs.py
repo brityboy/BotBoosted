@@ -85,8 +85,10 @@ class EvalTestCVBS(object):
                       format(i+1, percent))
                 drawn_index = np.random.choice(n_pos_total, n_draw,
                                                replace=False)
+                bootstrapped_index = np.random.choice(n_neg_total, n_neg_total,
+                                                      replace=True)
                 drawn_X = X_pos[drawn_index]
-                test_X = np.vstack((X_neg, drawn_X))
+                test_X = np.vstack((X_neg[bootstrapped_index], drawn_X))
                 test_y = np.hstack((y_neg, np.ones(n_draw)))
                 y_pred = model.predict(test_X)
                 precision_0.append(precision_score(test_y, y_pred,
