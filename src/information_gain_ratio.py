@@ -3,6 +3,17 @@ import pandas as pd
 from collections import Counter
 
 
+def is_categorical(x):
+    '''
+    INPUT
+         - single data point x
+    OUTPUT
+         - boolean
+    returns true if x is categorical else false
+    '''
+    return isinstance(x, str) or isinstance(x, bool) or isinstance(x, unicode)
+
+
 def check_if_categorical(attribute, df):
     '''
     INPUT:
@@ -12,9 +23,6 @@ def check_if_categorical(attribute, df):
          - boolean
     Returns True if feature in df is categorical else False
     '''
-    is_categorical = lambda x: isinstance(x, str) or \
-                               isinstance(x, bool) or \
-                               isinstance(x, unicode)
     check_if_categorical = np.vectorize(is_categorical)
     if np.mean(check_if_categorical(df[attribute].values)) == 1:
         return True
@@ -97,7 +105,9 @@ def information_gain(y, y1, y2, impurity_criterion):
     Use self.impurity_criterion(y) rather than calling _entropy or _gini
     directly.
     '''
-    return impurity_criterion(y) - (float(len(y1))/len(y) * impurity_criterion(y1) + float(len(y2))/len(y) * impurity_criterion(y2))
+    return impurity_criterion(y) - \
+        (float(len(y1))/len(y) * impurity_criterion(y1) +
+            float(len(y2))/len(y) * impurity_criterion(y2))
 
 
 def choose_split_index(X, y):
@@ -132,16 +142,27 @@ def choose_split_index(X, y):
                 split_index = i
                 split_value = j
     if info_gain <= error_threshold:
-        print info_gain
+        print(info_gain)
         return None, None, None
     else:
-        return split_index, split_value, make_split(X, y, split_index, split_value)
+        return split_index, split_value, \
+            make_split(X, y, split_index, split_value)
 
 
 def load_contraceptive_data():
+    '''
+    INPUT
+         - none
+    OUTPUT
+         - df
+         - X
+         - y
+    Return the df, X features, y values for the cmc.data.txt dataset
+    '''
     df = pd.read_csv('data/cmc.data.txt', header=None)
     df.columns = ['wife_age', 'wife_educ', 'hus_educ', 'num_kids', 'wife_rel',
-                  'wife_work_status', 'hus_job', 'living_std', 'media_expo', 'label']
+                  'wife_work_status', 'hus_job', 'living_std',
+                  'media_expo', 'label']
     y = df.pop('label')
     y = np.array(y)
     X = df.values
@@ -149,18 +170,33 @@ def load_contraceptive_data():
 
 
 def information_gain_by_attribute_categorical(attribute, df, y):
+    '''
+    INPUT
+         - attribute: string, column in the dataframe that IS categorical
+         - df: dataframe of features
+         - y: 1d array of targets
+    OUTPUT
+         - float
+    Return the information gain for a specific attribute
+    '''
     attribute_value_array = df[attribute].values
     possible_attribute_values = np.unique(attribute_value_array)
     attribute_info_gain = 0
     numerator_values = Counter(attribute_value_array)
     for possible_attribute_value in possible_attribute_values:
         value_info_gain = 0
-        subset_of_y_values = y[attribute_value_array == possible_attribute_value]
+        subset_of_y_values = \
+            y[attribute_value_array == possible_attribute_value]
         y_outcomes = np.unique(subset_of_y_values)
         for y_outcome in y_outcomes:
-            value_info_gain += float(len(subset_of_y_values[subset_of_y_values == y_outcome]))/len(subset_of_y_values) * np.log2(float(len(subset_of_y_values[subset_of_y_values == y_outcome]))/len(subset_of_y_values))
-        # value_info_gain = -1 * value_info_gain
-        attribute_info_gain += float(numerator_values[possible_attribute_value])/len(y) * -1 * value_info_gain
+            y_num_value = len(subset_of_y_values
+                              [subset_of_y_values == y_outcome])
+            value_info_gain += \
+                float(y_num_value)/len(subset_of_y_values) \
+                * np.log2(float(y_num_value)/len(subset_of_y_values))
+        attribute_info_gain += \
+            float(numerator_values[possible_attribute_value])/len(y) * \
+            -1 * value_info_gain
     return entropy(y) - attribute_info_gain
 
 
@@ -199,13 +235,26 @@ def information_gain_by_attribute_continuous(attribute, df, y):
             # initialize value_info_gain to accumulate into for this variable
             value_info_gain = 0
             for y_outcome in y_outcomes:
-                count_of_y_outcome = len(subset_of_y_values[subset_of_y_values == y_outcome])
-                value_info_gain += float(count_of_y_outcome)/len(subset_of_y_values) * np.log2(float(count_of_y_outcome)/len(subset_of_y_values))
-            attribute_info_gain += float(len(subset_of_y_values))/len(y) * -1 * value_info_gain
+                y_num_value = len(subset_of_y_values
+                                  [subset_of_y_values == y_outcome])
+                value_info_gain += \
+                    float(y_num_value)/len(subset_of_y_values) \
+                    * np.log2(float(y_num_value)/len(subset_of_y_values))
+            attribute_info_gain += \
+                float(len(subset_of_y_values))/len(y) * -1 * value_info_gain
     return entropy(y) - attribute_info_gain
 
 
 def potential_information_by_attribute_continuous(attribute, df, y):
+    '''
+    INPUT
+         - attribute: str, feature to check
+         - df: pandas dataframe of features
+         - y: 1d array, target
+    OUTPUT
+         - float
+    Returns the potential information gain accdg to Quinlan's C4.5
+    '''
     attribute_value_array = df[attribute].values
     attribute_value_options = list(set(attribute_value_array))
     possible_attribute_values = []
@@ -215,35 +264,80 @@ def potential_information_by_attribute_continuous(attribute, df, y):
         possible_attribute_values.append(float(v1+v2)/2)
     potential_information = 0
     for possible_attribute_value in possible_attribute_values:
-        X1, y1, X2, y2 = make_split(attribute_value_array, y, possible_attribute_value)
+        X1, y1, X2, y2 = \
+            make_split(attribute_value_array, y, possible_attribute_value)
         for subset_of_y in [y1, y2]:
-            potential_information += (float(len(subset_of_y))/len(y)) * np.log2(float(len(subset_of_y))/len(y))
+            potential_information += \
+                (float(len(subset_of_y))/len(y)) * \
+                np.log2(float(len(subset_of_y))/len(y))
     return -1 * potential_information
 
 
 def potential_information_by_attribute_categorical(attribute, df, y):
+    '''
+    INPUT
+         - attribute: str, feature to check
+         - df: pandas dataframe of features
+         - y: 1d array, target
+    OUTPUT
+         - float
+    Returns the potential information gain accdg to Quinlan's C4.5
+    '''
     attribute_value_array = df[attribute].values
     possible_attribute_values = np.unique(attribute_value_array)
     potential_information = 0
     for possible_attribute_value in possible_attribute_values:
         subset_of_y = y[attribute_value_array == possible_attribute_value]
-        potential_information += (float(len(subset_of_y))/len(y)) * np.log2(float(len(subset_of_y))/len(y))
+        potential_information += \
+            (float(len(subset_of_y))/len(y)) \
+            * np.log2(float(len(subset_of_y))/len(y))
     return -1 * potential_information
 
 
 def information_gain_ratio_categorical(attribute, df, y):
-    information_gain = information_gain_by_attribute_categorical(attribute, df, y)
-    potential_information = potential_information_by_attribute_categorical(attribute, df, y)
+    '''
+    INPUT
+         - attribute: str, feature to check
+         - df: pandas dataframe of features
+         - y: 1d array, target
+    OUTPUT
+         - float
+    Returns the information gain ratio accdg to Quinlan's C4.5
+    '''
+    information_gain = \
+        information_gain_by_attribute_categorical(attribute, df, y)
+    potential_information = \
+        potential_information_by_attribute_categorical(attribute, df, y)
     return float(information_gain)/potential_information
 
 
 def information_gain_ratio_continuous(attribute, df, y):
-    information_gain = information_gain_by_attribute_continuous(attribute, df, y)
-    potential_information = potential_information_by_attribute_continuous(attribute, df, y)
+    '''
+    INPUT
+         - attribute: str, feature to check
+         - df: pandas dataframe of features
+         - y: 1d array, target
+    OUTPUT
+         - float
+    Returns the information gain ratio accdg to Quinlan's C4.5
+    '''
+    information_gain = \
+        information_gain_by_attribute_continuous(attribute, df, y)
+    potential_information = \
+        potential_information_by_attribute_continuous(attribute, df, y)
     return float(information_gain)/potential_information
 
 
 def load_play_golf():
+    '''
+    INPUT
+         - none
+    OUTPUT
+         - df
+         - X
+         - y
+    Return the df, X features, y values for the playgold.csv toy dataset
+    '''
     df = pd.read_csv('data/playgolf.csv')
     df.columns = [c.lower() for c in df.columns]
     y = df.pop('result')
@@ -253,6 +347,15 @@ def load_play_golf():
 
 
 def load_labor_negotiations_data():
+    '''
+    INPUT
+         - none
+    OUTPUT
+         - df
+         - X
+         - y
+    Return the df, X features, y values for the labor-neg.data.txt dataset
+    '''
     df = pd.read_csv('data/labor-neg.data.txt', header=None)
     df.columns = ['dur', 'wage1', 'wage2', 'wage3', 'cola', 'hours', 'pension',
                   'stby_pay', 'shift_diff', 'educ_allw', 'holidays',
@@ -270,14 +373,20 @@ if __name__ == "__main__":
     # error_threshold = 0
     print('information_gain')
     for attribute in df.columns:
-        print attribute, information_gain_by_attribute_categorical(attribute, df, y)
+        print(attribute,
+              information_gain_by_attribute_categorical(attribute, df, y))
     print('')
     print('split_information_gain')
     for attribute in df.columns:
-        print attribute, potential_information_by_attribute_categorical(attribute, df, y)
+        print(attribute,
+              potential_information_by_attribute_categorical(attribute, df, y))
     print('')
     print('information_gain_ratio')
     for attribute in df.columns:
-        print attribute, information_gain_ratio_categorical(attribute, df, y)
+        print(attribute, information_gain_ratio_categorical(attribute, df, y))
     # index, value, splits = choose_split_index(X, y)
     # X1, y1, X2, y2 = splits
+    print('\ntest information gain for temperature')
+    print(information_gain_by_attribute_continuous('temperature', df, y))
+    print(potential_information_by_attribute_continuous('temperature', df, y))
+    print(information_gain_ratio_continuous('temperature', df, y))
