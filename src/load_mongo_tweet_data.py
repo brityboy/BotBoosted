@@ -4,7 +4,6 @@ from unidecode import unidecode
 import pandas as pd
 
 
-
 def load_pred_dict_from_pickle(filename):
     '''
     INPUT
@@ -35,18 +34,24 @@ def get_tweets(dbname, collectionname, pred_dict):
     '''
     user_id_list = []
     textlist = []
+    username_list = []
     client = MongoClient()
     db = client[dbname]
     tab = db[collectionname].find()
     for document in tab:
         user_id_list.append(str(document['user']['id']))
+        username_list.append(unidecode(document['user']['screen_name']))
         textlist.append(unidecode(document['text']))
     df = pd.DataFrame(user_id_list, columns=['id'])
     df['text'] = textlist
-    df['pred'] = df.id.apply(lambda _id: pred_dict[_id])
+    df['screen_name'] = username_list
     return df
 
 
 if __name__ == "__main__":
-    pred_dict = load_pred_dict_from_pickle('data/clintonmillion_pred_dict.pkl')
-    df = get_tweets('clintonmillion', 'topictweets', pred_dict)
+    pred_dict = load_pred_dict_from_pickle('data/trumpmillion_pred_dict.pkl')
+    df = get_tweets('trumpmillion', 'topictweets', pred_dict)
+    df_classified_users = df[df.id.isin(pred_dict)]
+    df_classified_users['pred'] = \
+        df_classified_users.id.apply(lambda _id: pred_dict[_id])
+    df_classified_users.to_csv('data/trumptweets.csv', index=None)
