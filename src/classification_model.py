@@ -131,9 +131,7 @@ def view_feature_importances(df, model):
     print(pd.DataFrame(featimps, columns=['Features',
                        'Importances']).sort_values(by='Importances',
                                                    ascending=False))
-
-
-
+                                                   
 if __name__ == "__main__":
     df = pd.read_csv('data/training_df.csv')
     df.drop('Unnamed: 0', axis=1, inplace=True)
