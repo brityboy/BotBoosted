@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-# from classification_model import *
 from prediction_model import *
 from sklearn.cross_validation import train_test_split
 from sklearn.metrics import precision_score, recall_score
@@ -63,6 +62,7 @@ class EvalTestCVBS(object):
         y_neg = y_test[y_test == 0]
         n_pos_total = y_pos.shape[0]
         n_neg_total = y_neg.shape[0]
+        n_total = y_test.shape[0]
         self.percent_range = np.arange(self.r_min, self.r_max, self.r_step)
         self.avg_precision_0 = []
         self.avg_recall_0 = []
@@ -76,7 +76,9 @@ class EvalTestCVBS(object):
               format(self.percent_range.shape[0]*self.n_jobs))
         for percent in self.percent_range:
             print('currently evaluating split at {} percent'.format(percent))
-            n_draw = int((n_neg_total*percent)/(1-percent))
+            # n_draw = int((n_neg_total*percent)/(1-percent))
+            n_draw_pos = int(n_total*percent)
+            n_draw_neg = n_total - n_draw_pos
             precision_0 = []
             recall_0 = []
             precision_1 = []
@@ -84,13 +86,13 @@ class EvalTestCVBS(object):
             for i in xrange(self.n_jobs):
                 print('currently doing job {} for {} percent'.
                       format(i+1, percent))
-                drawn_index = np.random.choice(n_pos_total, n_draw,
-                                               replace=False)
-                bootstrapped_index = np.random.choice(n_neg_total, n_neg_total,
+                ix_draw_pos = np.random.choice(n_pos_total, n_draw_pos,
+                                               replace=True)
+                ix_draw_neg = np.random.choice(n_neg_total, n_draw_neg,
                                                       replace=True)
-                drawn_X = X_pos[drawn_index]
-                test_X = np.vstack((X_neg[bootstrapped_index], drawn_X))
-                test_y = np.hstack((y_neg, np.ones(n_draw)))
+                test_X = np.vstack((X_neg[ix_draw_neg],
+                                    X_pos[ix_draw_pos]))
+                test_y = np.hstack((np.zeros(n_draw_neg), np.ones(n_draw_pos)))
                 y_pred = self.model.predict(test_X)
                 precision_0.append(precision_score(test_y, y_pred,
                                                    pos_label=0))
@@ -127,7 +129,6 @@ class EvalTestCVBS(object):
 
 
 if __name__ == "__main__":
-    # model = load_pickled_model('models/vanilla_random_forest_model.pkl')
     df = pd.read_csv('data/training_df.csv')
     df.drop('Unnamed: 0', axis=1, inplace=True)
     user_id_array = df.pop('id')
