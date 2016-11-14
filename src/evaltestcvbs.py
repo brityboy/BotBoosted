@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
-from classification_model import *
+# from classification_model import *
 from prediction_model import *
 from sklearn.cross_validation import train_test_split
 from sklearn.metrics import precision_score, recall_score
 import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
 
 
 class EvalTestCVBS(object):
@@ -62,7 +63,7 @@ class EvalTestCVBS(object):
         y_neg = y_test[y_test == 0]
         n_pos_total = y_pos.shape[0]
         n_neg_total = y_neg.shape[0]
-        percent_range = np.arange(self.r_min, self.r_max, self.r_step)
+        self.percent_range = np.arange(self.r_min, self.r_max, self.r_step)
         self.avg_precision_0 = []
         self.avg_recall_0 = []
         self.avg_precision_1 = []
@@ -72,8 +73,8 @@ class EvalTestCVBS(object):
         self.std_precision_1 = []
         self.std_recall_1 = []
         print('total of {} prediction jobs'.
-              format(percent_range.shape[0]*self.n_jobs))
-        for percent in percent_range:
+              format(self.percent_range.shape[0]*self.n_jobs))
+        for percent in self.percent_range:
             print('currently evaluating split at {} percent'.format(percent))
             n_draw = int((n_neg_total*percent)/(1-percent))
             precision_0 = []
@@ -90,7 +91,7 @@ class EvalTestCVBS(object):
                 drawn_X = X_pos[drawn_index]
                 test_X = np.vstack((X_neg[bootstrapped_index], drawn_X))
                 test_y = np.hstack((y_neg, np.ones(n_draw)))
-                y_pred = model.predict(test_X)
+                y_pred = self.model.predict(test_X)
                 precision_0.append(precision_score(test_y, y_pred,
                                                    pos_label=0))
                 recall_0.append(recall_score(test_y, y_pred, pos_label=0))
@@ -106,9 +107,6 @@ class EvalTestCVBS(object):
             self.std_precision_1.append(np.std(precision_1, ddof=1))
             self.std_recall_1.append(np.std(recall_1, ddof=1))
 
-        return percent_range, self.avg_precision_0, self.avg_recall_0, \
-            self.avg_precision_1, self.avg_recall_1
-
     def plot_performance(self):
         '''
         INPUT
@@ -117,10 +115,10 @@ class EvalTestCVBS(object):
              - plots the performance of the classifier
         returns none
         '''
-        plt.plot(percent_range, self.avg_precision_0, label='precision_0')
-        plt.plot(percent_range, self.avg_recall_0, label='recall_0')
-        plt.plot(percent_range, self.avg_precision_1, label='precision_1')
-        plt.plot(percent_range, self.avg_recall_1, label='recall_1')
+        plt.plot(self.percent_range, self.avg_precision_0, label='precision_0')
+        plt.plot(self.percent_range, self.avg_recall_0, label='recall_0')
+        plt.plot(self.percent_range, self.avg_precision_1, label='precision_1')
+        plt.plot(self.percent_range, self.avg_recall_1, label='recall_1')
         plt.legend(loc='best')
         plt.title('Model Precision and Recall at Different Split Percentages')
         plt.xlabel('Split Percentages')
@@ -129,7 +127,7 @@ class EvalTestCVBS(object):
 
 
 if __name__ == "__main__":
-    model = load_pickled_model('models/vanilla_random_forest_model.pkl')
+    # model = load_pickled_model('models/vanilla_random_forest_model.pkl')
     df = pd.read_csv('data/training_df.csv')
     df.drop('Unnamed: 0', axis=1, inplace=True)
     user_id_array = df.pop('id')
@@ -137,7 +135,8 @@ if __name__ == "__main__":
     y = y.values
     X = df.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
+    model = RandomForestClassifier(n_jobs=-1)
+    model.fit(X_train, y_train)
     etcb = EvalTestCVBS(model, .05, .7, .05, 10)
-    percent_range, avg_precision_0, avg_recall_0, avg_precision_1, \
-        avg_recall_1 = etcb.evaluate_data(X_test, y_test)
+    etcb.evaluate_data(X_test, y_test)
     etcb.plot_performance()
