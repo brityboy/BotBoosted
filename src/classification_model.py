@@ -118,7 +118,8 @@ if __name__ == "__main__":
     y = df.pop('label')
     X = df.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
-    X_train_b, y_train_b = balance_classes(RandomOverSampler(), X_train, y_train)
+    X_train_b, y_train_b = balance_classes(RandomOverSampler(),
+                                           X_train, y_train)
     model = RandomForestClassifier(n_jobs=-1)
     model = evaluate_model(model, X_train_b, y_train_b)
     print("\nthis is the model performance on the training data\n")
