@@ -10,7 +10,7 @@ from sklearn.cluster import DBSCAN
 import numpy as np
 import dill as pickle
 import pandas as pd
-from evaltestcvbs import EvalTestCVBS
+# from evaltestcvbs import EvalTestCVBS
 
 
 def evaluate_model(model, X_train, y_train):
@@ -131,7 +131,7 @@ def view_feature_importances(df, model):
     print(pd.DataFrame(featimps, columns=['Features',
                        'Importances']).sort_values(by='Importances',
                                                    ascending=False))
-                                                   
+
 if __name__ == "__main__":
     df = pd.read_csv('data/training_df.csv')
     df.drop('Unnamed: 0', axis=1, inplace=True)
@@ -148,6 +148,11 @@ if __name__ == "__main__":
     view_classification_report(model, X_train_b, y_train_b)
     print("this is the model performance on the test data\n")
     view_classification_report(model, X_test, y_test)
+    print("this is the model performance on different split ratios\n")
+    # etcb = EvalTestCVBS(model, .05, .7, .05, 10)
+    # percent_range, avg_precision_0, avg_recall_0, avg_precision_1, \
+    #     avg_recall_1 = etcb.evaluate_data(X_test, y_test)
+    # etcb.plot_performance()
     # print("\nthese are the model feature importances\n")
     # view_feature_importances(df, model)
     # write_model_to_pkl(model, 'vanilla_random_forest')
