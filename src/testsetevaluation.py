@@ -81,8 +81,8 @@ class Eval(object):
             precision_1 = []
             recall_1 = []
             for i in xrange(self.n_jobs):
-                # print('currently doing job {} for {} percent'.
-                #       format(i+1, percent))
+                print('currently doing job {} for {} percent'.
+                      format(i+1, percent))
                 drawn_index = np.random.choice(n_pos_total, n_draw,
                                                replace=False)
                 bootstrapped_index = np.random.choice(n_neg_total, n_neg_total,
@@ -97,18 +97,10 @@ class Eval(object):
                 precision_1.append(precision_score(test_y, y_pred,
                                                    pos_label=1))
                 recall_1.append(recall_score(test_y, y_pred, pos_label=1))
-            avg_prec_0 = np.mean(precision_0)
-            avg_rec_0 = np.mean(recall_0)
-            avg_prec_1 = np.mean(precision_1)
-            avg_rec_1 = np.mean(recall_1)
-            print('the avg precision for class 0 is {}'.format(avg_prec_0))
-            print('the avg recall for class 0 is {}'.format(avg_rec_0))
-            print('the avg precision for class 1 is {}'.format(avg_prec_1))
-            print('the avg recall for class 1 is {}'.format(avg_rec_1))
-            self.avg_precision_0.append(avg_prec_0)
-            self.avg_recall_0.append(avg_rec_0)
-            self.avg_precision_1.append(avg_prec_1)
-            self.avg_recall_1.append(avg_rec_1)
+            self.avg_precision_0.append(np.mean(precision_0))
+            self.avg_recall_0.append(np.mean(recall_0))
+            self.avg_precision_1.append(np.mean(precision_1))
+            self.avg_recall_1.append(np.mean(recall_1))
             self.std_precision_0.append(np.std(precision_0, ddof=1))
             self.std_recall_0.append(np.std(recall_0, ddof=1))
             self.std_precision_1.append(np.std(precision_1, ddof=1))
