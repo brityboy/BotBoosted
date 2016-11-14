@@ -12,6 +12,7 @@ import dill as pickle
 import pandas as pd
 from evaltestcvbs import EvalTestCVBS as Eval
 import information_gain_ratio as igr
+from sklearn.grid_search import GridSearchCV
 
 
 def evaluate_model(model, X_train, y_train):
@@ -133,6 +134,33 @@ def view_feature_importances(df, model):
                                                    ascending=False))
 
 
+def gridsearch(paramgrid, model, X_train, y_train):
+    '''
+    INPUT
+         - paramgrid: dictionary of lists containing parmeters and
+         hypermarameters
+         - X_train: 2d array of features
+         - y_train: 1d array of class labels
+    OUTPUT
+         - best_model: a fit sklearn classifier with the best parameters
+         - the gridsearch object
+
+    Performs grid search cross validation and
+    returns the best model and the gridsearch object
+    '''
+    gridsearch = GridSearchCV(model,
+                              paramgrid,
+                              n_jobs=-1,
+                              verbose=10,
+                              cv=10)
+    gridsearch.fit(X_train, y_train)
+    best_model = gridsearch.best_estimator_
+    print('these are the parameters of the best model')
+    print(best_model)
+    print('\nthese is the best score')
+    print(gridsearch.best_score_)
+    return best_model, gridsearch
+
 def get_igr_attribute_weights(X_train_b, y_train_b, df):
     '''
     INPUT
@@ -162,10 +190,18 @@ if __name__ == "__main__":
     X_train_b, y_train_b = balance_classes(RandomUnderSampler(),
                                            X_train, y_train)
     weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
-    X_train_b = X_train_b * weights
+    X_train_bw = X_train_b * weights
+    rfparamgrid = {'n_estimators': [100],
+                   'max_features': ['auto'],
+                   'criterion': ['gini', 'entropy'],
+                   'min_samples_split': [17, 20, 23],
+                   'min_samples_leaf': [1, 5, 10],
+                   'max_depth': [12, 13, 14, 15, 16],
+                   'bootstrap': [True]}
     model = RandomForestClassifier(n_jobs=-1)
+    model, gridsearch = gridsearch(rfparamgrid, model, X_train_bw, y_train_b)
     # model = GaussianNB()
-    model = evaluate_model(model, X_train_b, y_train_b)
+    # model = evaluate_model(model, X_train_b, y_train_b)
     print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train_b, y_train_b)
     print("this is the model performance on the test data\n")
@@ -174,6 +210,7 @@ if __name__ == "__main__":
     etcb = Eval(model, .05, .7, .05, 10)
     etcb.evaluate_data(X_test, y_test)
     etcb.plot_performance()
+    print model
     # print("\nthese are the model feature importances\n")
     # view_feature_importances(df, model)
     # write_model_to_pkl(model, 'vanilla_random_forest')
