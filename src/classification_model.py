@@ -11,6 +11,7 @@ import numpy as np
 import dill as pickle
 import pandas as pd
 # from evaltestcvbs import EvalTestCVBS
+from testsetevaluation import Eval
 
 
 def evaluate_model(model, X_train, y_train):
@@ -141,18 +142,18 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
     X_train_b, y_train_b = balance_classes(RandomUnderSampler(),
                                            X_train, y_train)
-    # model = RandomForestClassifier(n_jobs=-1)
-    model = MultinomialNB()
+    model = RandomForestClassifier(n_jobs=-1)
+    # model = MultinomialNB()
     model = evaluate_model(model, X_train_b, y_train_b)
     print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train_b, y_train_b)
     print("this is the model performance on the test data\n")
     view_classification_report(model, X_test, y_test)
     print("this is the model performance on different split ratios\n")
-    # etcb = EvalTestCVBS(model, .05, .7, .05, 10)
-    # percent_range, avg_precision_0, avg_recall_0, avg_precision_1, \
-    #     avg_recall_1 = etcb.evaluate_data(X_test, y_test)
-    # etcb.plot_performance()
+    etcb = Eval(model, .05, .7, .05, 10)
+    percent_range, avg_precision_0, avg_recall_0, avg_precision_1, \
+        avg_recall_1 = etcb.evaluate_data(X_test, y_test)
+    etcb.plot_performance()
     # print("\nthese are the model feature importances\n")
     # view_feature_importances(df, model)
     # write_model_to_pkl(model, 'vanilla_random_forest')
