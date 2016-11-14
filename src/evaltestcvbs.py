@@ -6,6 +6,7 @@ from sklearn.cross_validation import train_test_split
 from sklearn.metrics import precision_score, recall_score
 import matplotlib.pyplot as plt
 
+
 class EvalTestCVBS(object):
     '''
     this is a class that does random sampling from test data to solidify
@@ -123,7 +124,6 @@ class EvalTestCVBS(object):
         plt.xlabel('Split Percentages')
         plt.ylabel('Performance Score')
         plt.show()
-
 
 
 if __name__ == "__main__":
