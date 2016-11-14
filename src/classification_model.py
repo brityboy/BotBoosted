@@ -1,5 +1,6 @@
 from information_gain_ratio import *
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.cross_validation import train_test_split, cross_val_score
 from process_loaded_data import *
 from sklearn.metrics import classification_report
@@ -9,6 +10,7 @@ from sklearn.cluster import DBSCAN
 import numpy as np
 import dill as pickle
 import pandas as pd
+from evaltestcvbs import EvalTestCVBS
 
 
 def evaluate_model(model, X_train, y_train):
@@ -111,6 +113,27 @@ def write_model_to_pkl(model, model_name):
         pickle.dump(model, f)
 
 
+def view_feature_importances(df, model):
+    '''
+    INPUT
+         - df: dataframe which has the original data
+         - model: this is the sklearn classification model that has
+         already been fit (work with tree based models)
+    OUTPUT
+         - prints the feature importances in descending order
+    Returns nothing
+    '''
+    columns = df.columns
+    features = model.feature_importances_
+    featimps = []
+    for column, feature in zip(columns, features):
+        featimps.append([column, feature])
+    print(pd.DataFrame(featimps, columns=['Features',
+                       'Importances']).sort_values(by='Importances',
+                                                   ascending=False))
+
+
+
 if __name__ == "__main__":
     df = pd.read_csv('data/training_df.csv')
     df.drop('Unnamed: 0', axis=1, inplace=True)
@@ -118,12 +141,15 @@ if __name__ == "__main__":
     y = df.pop('label')
     X = df.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
-    X_train_b, y_train_b = balance_classes(RandomOverSampler(),
+    X_train_b, y_train_b = balance_classes(RandomUnderSampler(),
                                            X_train, y_train)
-    model = RandomForestClassifier(n_jobs=-1)
+    # model = RandomForestClassifier(n_jobs=-1)
+    model = MultinomialNB()
     model = evaluate_model(model, X_train_b, y_train_b)
     print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train_b, y_train_b)
     print("this is the model performance on the test data\n")
     view_classification_report(model, X_test, y_test)
+    # print("\nthese are the model feature importances\n")
+    # view_feature_importances(df, model)
     # write_model_to_pkl(model, 'vanilla_random_forest')
