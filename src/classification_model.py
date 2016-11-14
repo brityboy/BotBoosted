@@ -10,8 +10,7 @@ from sklearn.cluster import DBSCAN
 import numpy as np
 import dill as pickle
 import pandas as pd
-# from evaltestcvbs import EvalTestCVBS
-from testsetevaluation import Eval
+from evaltestcvbs import EvalTestCVBS as Eval
 
 
 def evaluate_model(model, X_train, y_train):
@@ -83,8 +82,7 @@ def view_classification_report(model, X_test, y_test):
          - information on the classifiaction performance of the model
     Returns none
     '''
-    y_pred = model.predict(X_test)
-    print(classification_report(y_test, y_pred))
+    print(classification_report(y_test, model.predict(X_test)))
 
 
 def check_classifier_with_different_test_subsamples(model, X_test, y_test):
@@ -138,6 +136,7 @@ if __name__ == "__main__":
     df.drop('Unnamed: 0', axis=1, inplace=True)
     user_id_array = df.pop('id')
     y = df.pop('label')
+    y = y.values
     X = df.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
     X_train_b, y_train_b = balance_classes(RandomUnderSampler(),
@@ -151,8 +150,7 @@ if __name__ == "__main__":
     view_classification_report(model, X_test, y_test)
     print("this is the model performance on different split ratios\n")
     etcb = Eval(model, .05, .7, .05, 10)
-    percent_range, avg_precision_0, avg_recall_0, avg_precision_1, \
-        avg_recall_1 = etcb.evaluate_data(X_test, y_test)
+    etcb.evaluate_data(X_test, y_test)
     etcb.plot_performance()
     # print("\nthese are the model feature importances\n")
     # view_feature_importances(df, model)
