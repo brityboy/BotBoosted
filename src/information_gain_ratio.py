@@ -134,14 +134,12 @@ def determine_optimal_continuous_split_values(attribute, df, y):
          - y: 1d array, target
     OUTPUT
          - max_split: tuple of best values to split on
-         - info_gain_list: list of all information gains
+         - info_gain_array: numpy array of all information gains
          - possible_splits: list of all possible split values
     Returns tuple of split values that optimize information gain (min 1 max 3)
     '''
     attribute_value_array = df[attribute].values
     split_values = np.unique(sorted(attribute_value_array))[:-1]
-    max_info_gain = 0
-    max_split = 0
     info_gain_list = []
     info_gain = 0
     possible_splits = list(combinations(split_values, 1)) + \
@@ -151,9 +149,9 @@ def determine_optimal_continuous_split_values(attribute, df, y):
         X_list, y_list = make_multiple_split(attribute_value_array, y, split)
         info_gain = multiple_information_gain(y, y_list, entropy)
         info_gain_list.append(info_gain)
-        if info_gain > max_info_gain:
-            max_split = split
-    return max_split, info_gain_list, possible_splits
+        info_gain_array = np.array(info_gain_list)
+        max_split = possible_splits[np.argmax(info_gain_array)]
+    return max_split, info_gain_array, possible_splits
 
 
 def make_multiple_split(X, y, split_value):
