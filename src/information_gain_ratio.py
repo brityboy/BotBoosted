@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from collections import Counter
+from itertools import combinations
 
 
 def is_categorical(x):
@@ -108,6 +109,78 @@ def information_gain(y, y1, y2, impurity_criterion):
     return impurity_criterion(y) - \
         (float(len(y1))/len(y) * impurity_criterion(y1) +
             float(len(y2))/len(y) * impurity_criterion(y2))
+
+
+def determine_optimal_continuous_split_values(attribute, df, y):
+    '''
+    INPUT
+         - attribute: str, feature to check
+         - df: pandas dataframe of features
+         - y: 1d array, target
+    OUTPUT
+         - list
+    Returns list of split values that optimize information gain (min 1 max 3)
+    '''
+    attribute_value_array = df[attribute].values
+    split_values = np.unique(sorted(attribute_value_array))[:-1]
+    max_info_gain = 0
+    max_split = 0
+    possible_splits = list(split_values) + \
+        list(combinations(split_values, 2)) + \
+        list(combinations(split_values, 3))
+    for split in possible_splits:
+        if len(split) == 1:
+        elif len(split) == 2:
+        else:
+
+
+def make_multiple_split(X, y, split_value):
+    '''
+    INPUT:
+        - X: 2d numpy array
+        - y: 1d numpy array
+        - split_value: single integers or tuples
+    OUTPUT:
+        - X1: 2d numpy array (feature matrix for subset 1)
+        - X2: 2d numpy array (feature matrix for subset 2)
+        - X3: 2d numpy array (feature matrix for subset 3)
+        - X4: 2d numpy array (feature matrix for subset 4)
+        - y1: 1d numpy array (labels for subset 1)
+        - y2: 1d numpy array (labels for subset 2)
+        - y3: 1d numpy array (labels for subset 3)
+        - y4: 1d numpy array (labels for subset 4)
+
+
+    Return the multiple subsets of the dataset achieved by the given feature
+    and value to split on. --> two lists (one for X, one for y)
+    '''
+    if len(split_value) == 1:
+        X1 = X[X <= split_value]
+        y1 = y[X <= split_value]
+        X2 = X[X > split_value]
+        y2 = y[X > split_value]
+        return [X1, X2], [y1, y2]
+    if len(split_value) == 2:
+        lower, upper = split_value
+        X1 = X[X <= lower]
+        y1 = y[X <= lower]
+        X2 = X[(X > lower) & (X <= upper)]
+        y2 = y[(X > lower) & (X <= upper)]
+        X3 = X[X > upper]
+        y3 = y[X > upper]
+        return [X1, X2, X3], [y1, y2, y3]
+    if len(split_value) == 3:
+        lower, mid, upper = split_value
+        X1 = X[X <= lower]
+        y1 = y[X <= lower]
+        X2 = X[(X > lower) & (X <= mid)]
+        y2 = y[(X > lower) & (X <= mid)]
+        X3 = X[(X > mid) & (X <= upper)]
+        y3 = y[(X > mid) & (X <= upper)]
+        X4 = X[X > upper]
+        y4 = y[X > upper]
+        return [X1, X2, X3, X4], [y1, y2, y3, y4]
+
 
 
 def choose_split_index(X, y):
