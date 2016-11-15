@@ -144,6 +144,8 @@ class EvalTestCVBS(object):
 
 
 if __name__ == "__main__":
+    with open('models/tuned_random_forest_model.pkl') as f:
+        model = pickle.load(f)
     df = pd.read_csv('data/training_df.csv')
     df.drop('Unnamed: 0', axis=1, inplace=True)
     user_id_array = df.pop('id')
@@ -151,8 +153,8 @@ if __name__ == "__main__":
     y = y.values
     X = df.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
-    model = RandomForestClassifier(n_jobs=-1)
-    model.fit(X_train, y_train)
-    etcb = EvalTestCVBS(model, .05, .2, .05, 10)
+    # model = RandomForestClassifier(n_jobs=-1)
+    # model.fit(X_train, y_train)
+    etcb = EvalTestCVBS(model, .05, .5, .05, 10)
     etcb.evaluate_data(X_test, y_test)
     etcb.plot_performance()
