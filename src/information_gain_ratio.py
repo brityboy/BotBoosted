@@ -151,7 +151,24 @@ def determine_optimal_continuous_split_values(attribute, df, y):
         info_gain_list.append(info_gain)
         info_gain_array = np.array(info_gain_list)
         max_split = possible_splits[np.argmax(info_gain_array)]
-    return max_split, info_gain_array, possible_splits
+    return max_split
+
+
+def potential_attribute_information_gain_continuous(X_list):
+    '''
+    INPUT
+         - X_list: list of optimally split attribute values
+    OUTPUT
+         - float
+    Returns the potential information gain for a continuous split variable
+    using ross quinlan's information gain ratio formula in C4.5
+    '''
+    potential_information_gain = 0
+    n_X = sum([len(subset_of_X) for subset_of_X in X_list])
+    for X_values in X_list:
+        subset_ratio = float(len(X_values))/n_X
+        potential_information_gain += subset_ratio * np.log2(subset_ratio)
+    return -1 * potential_information_gain
 
 
 def make_multiple_split(X, y, split_value):
@@ -415,11 +432,11 @@ def information_gain_ratio_continuous(attribute, df, y):
          - float
     Returns the information gain ratio accdg to Quinlan's C4.5
     '''
-    information_gain = \
-        information_gain_by_attribute_continuous(attribute, df, y)
-    potential_information = \
-        potential_information_by_attribute_continuous(attribute, df, y)
-    return float(information_gain)/potential_information
+    max_split = determine_optimal_continuous_split_values(attribute, df, y)
+    X_list, y_list = make_multiple_split(df[attribute].values, y, max_split)
+    ig = multiple_information_gain(y, y_list, entropy)
+    pig = potential_attribute_information_gain_continuous(X_list)
+    return ig/pig
 
 
 def load_play_golf():
@@ -481,6 +498,9 @@ if __name__ == "__main__":
     # index, value, splits = choose_split_index(X, y)
     # X1, y1, X2, y2 = splits
     print('\ntest information gain for temperature')
-    print(information_gain_by_attribute_continuous('temperature', df, y))
-    print(potential_information_by_attribute_continuous('temperature', df, y))
-    print(information_gain_ratio_continuous('temperature', df, y))
+    max_split = determine_optimal_continuous_split_values('humidity', df, y)
+    X_list, y_list = make_multiple_split(df['humidity'].values, y, max_split)
+    print(multiple_information_gain(y, y_list, entropy))
+    print(potential_attribute_information_gain_continuous(X_list))
+    print(multiple_information_gain(y, y_list, entropy)/potential_attribute_information_gain_continuous(X_list))
+    print(information_gain_ratio_continuous('humidity', df, y))
