@@ -1,5 +1,5 @@
 from information_gain_ratio import *
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.cross_validation import train_test_split, cross_val_score
 from process_loaded_data import *
@@ -181,20 +181,27 @@ if __name__ == "__main__":
                                          X_test, y_test)
     weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
     X_train_bw = X_train_b * weights
+    # paramgrid = {'n_estimators': [1000],
+    #              'loss': ['exponential'],
+    #              'max_features': ['auto'],
+    #              'min_samples_split': [22],
+    #              'min_samples_leaf': [5],
+    #              'max_depth': [3],
+    #              'subsample': [.5]}
     # paramgrid = {'n_estimators': [200],
-    #                'max_features': ['auto'],
-    #                'criterion': ['gini', 'entropy'],
-    #                'min_samples_split': [15, 16, 17, 18, 19, 20, 21, 22, 23],
-    #                'min_samples_leaf': [5, 6, 7, 8],
-    #                'max_depth': [12, 13, 14, 15, 16, 17],
-    #                'bootstrap': [True]}
-    paramgrid = {'kernel': ['rbf', 'poly', 'sigmoid'],
-                 'gamma': [.01, 'auto', 1.0, 5.0, 10.0],
-                 'C': [.01, .1, 1.0, 10.0]}
-    model = SVC()
+    #              'max_features': ['auto'],
+    #              'criterion': ['gini', 'entropy'],
+    #              'min_samples_split': [15, 16, 17, 18, 19, 20, 21, 22, 23],
+    #              'min_samples_leaf': [5, 6, 7, 8],
+    #              'max_depth': [12, 13, 14, 15, 16, 17],
+    #              'bootstrap': [True]}
+    # paramgrid = {'kernel': ['rbf'],
+    #              'gamma': [.01, 'auto', 1.0, 5.0, 10.0, 11, 12, 13],
+    #              'C': [.001, .01, .1, 1, 5]}
+    # model = SVC(probability=True)
     # model = RandomForestClassifier(n_jobs=-1)
-    model, gridsearch = gridsearch(paramgrid, model, X_train_bw, y_train_b)
-    # model = GaussianNB()
+    model = GradientBoostingClassifier()
+    # model, gridsearch = gridsearch(paramgrid, model, X_train_bw, y_train_b)
     # model = evaluate_model(model, X_train_bw, y_train_b)
     print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train_b, y_train_b)
@@ -208,5 +215,5 @@ if __name__ == "__main__":
     etcb.plot_performance()
     # print("\nthese are the model feature importances\n")
     # view_feature_importances(df, model)
-    # print(model)
-    # write_model_to_pkl(model, 'vanilla_gaussian_nb')
+    print(model)
+    write_model_to_pkl(model, 'tuned_gboostc')
