@@ -478,10 +478,7 @@ def load_labor_negotiations_data():
     return df, X, y
 
 if __name__ == "__main__":
-    # df, X, y = load_contraceptive_data()
     df, X, y = load_play_golf()
-    # impurity_criterion = entropy
-    # error_threshold = 0
     print('information_gain')
     for attribute in df.columns:
         print(attribute,
@@ -495,12 +492,5 @@ if __name__ == "__main__":
     print('information_gain_ratio')
     for attribute in df.columns:
         print(attribute, information_gain_ratio_categorical(attribute, df, y))
-    # index, value, splits = choose_split_index(X, y)
-    # X1, y1, X2, y2 = splits
     print('\ntest information gain for temperature')
-    max_split = determine_optimal_continuous_split_values('humidity', df, y)
-    X_list, y_list = make_multiple_split(df['humidity'].values, y, max_split)
-    print(multiple_information_gain(y, y_list, entropy))
-    print(potential_attribute_information_gain_continuous(X_list))
-    print(multiple_information_gain(y, y_list, entropy)/potential_attribute_information_gain_continuous(X_list))
-    print(information_gain_ratio_continuous('humidity', df, y))
+    print(information_gain_ratio_continuous('temperature', df, y))
