@@ -103,12 +103,27 @@ def information_gain(y, y1, y2, impurity_criterion):
     OUTPUT:
         - float
     Return the information gain of making the given split.
-    Use self.impurity_criterion(y) rather than calling _entropy or _gini
-    directly.
     '''
     return impurity_criterion(y) - \
         (float(len(y1))/len(y) * impurity_criterion(y1) +
             float(len(y2))/len(y) * impurity_criterion(y2))
+
+
+def multiple_information_gain(y, y_list, impurity_criterion):
+    '''
+    INPUT:
+        - y: 1d numpy array
+        - y_list: list of y values [y1, y2, y3]
+        - impurity_criterion: either gini or entropy
+    OUTPUT:
+        - float
+    Return the information gain of making the given split.
+    '''
+    aggregate_entropy = 0
+    for y_vals in y_list:
+        aggregate_entropy += float(len(y_vals))/len(y) * \
+            impurity_criterion(y_vals)
+    return impurity_criterion(y) - aggregate_entropy
 
 
 def determine_optimal_continuous_split_values(attribute, df, y):
@@ -118,20 +133,27 @@ def determine_optimal_continuous_split_values(attribute, df, y):
          - df: pandas dataframe of features
          - y: 1d array, target
     OUTPUT
-         - list
-    Returns list of split values that optimize information gain (min 1 max 3)
+         - max_split: tuple of best values to split on
+         - info_gain_list: list of all information gains
+         - possible_splits: list of all possible split values
+    Returns tuple of split values that optimize information gain (min 1 max 3)
     '''
     attribute_value_array = df[attribute].values
     split_values = np.unique(sorted(attribute_value_array))[:-1]
     max_info_gain = 0
     max_split = 0
-    possible_splits = list(split_values) + \
+    info_gain_list = []
+    info_gain = 0
+    possible_splits = list(combinations(split_values, 1)) + \
         list(combinations(split_values, 2)) + \
         list(combinations(split_values, 3))
     for split in possible_splits:
-        if len(split) == 1:
-        elif len(split) == 2:
-        else:
+        X_list, y_list = make_multiple_split(attribute_value_array, y, split)
+        info_gain = multiple_information_gain(y, y_list, entropy)
+        info_gain_list.append(info_gain)
+        if info_gain > max_info_gain:
+            max_split = split
+    return max_split, info_gain_list, possible_splits
 
 
 def make_multiple_split(X, y, split_value):
@@ -155,6 +177,7 @@ def make_multiple_split(X, y, split_value):
     and value to split on. --> two lists (one for X, one for y)
     '''
     if len(split_value) == 1:
+        split_value = split_value[0]
         X1 = X[X <= split_value]
         y1 = y[X <= split_value]
         X2 = X[X > split_value]
