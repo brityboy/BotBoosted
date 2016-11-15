@@ -8,7 +8,7 @@ from classification_model import *
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 from evaltestcvbs import EvalTestCVBS as Eval
-
+import numpy as np
 
 def plot_roc_curve(model, X, y, modelname):
     '''
@@ -140,9 +140,9 @@ if __name__ == "__main__":
     model_tuple_list = retrain_models(model_tuple_list, X_train_b, y_train_b)
     ensemble = create_voting_classifier_ensemble(model_tuple_list)
     plot_multiple_roc_curves(model_tuple_list+[('ensemble', ensemble)], X_test_b, y_test_b)
-    print("this is the model performance on different split ratios\n")
-    etcb = Eval(ensemble, .05, .95, .05, 10)
-    etcb.evaluate_data(X_test_b, y_test_b)
-    etcb.plot_performance()
+    # print("this is the model performance on different split ratios\n")
+    # etcb = Eval(ensemble, .05, .95, .05, 10)
+    # etcb.evaluate_data(X_test_b, y_test_b)
+    # etcb.plot_performance()
     ensemble.fit(np.vstack((X_train_b, X_test_b)), np.hstack((y_train_b, y_test_b)))
     write_model_to_pkl(ensemble, 'voting_ensemble')
