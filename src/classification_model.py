@@ -181,25 +181,21 @@ if __name__ == "__main__":
                                          X_test, y_test)
     weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
     X_train_bw = X_train_b * weights
-    # rfparamgrid = {'n_estimators': [200],
+    # paramgrid = {'n_estimators': [200],
     #                'max_features': ['auto'],
     #                'criterion': ['gini', 'entropy'],
     #                'min_samples_split': [15, 16, 17, 18, 19, 20, 21, 22, 23],
     #                'min_samples_leaf': [5, 6, 7, 8],
     #                'max_depth': [12, 13, 14, 15, 16, 17],
     #                'bootstrap': [True]}
-    # svmparamgrid = {'kernel': ['rbf', 'poly', 'sigmoid'],
-    #                'gamma': ['auto', .01, ],
-    #                'criterion': ['gini', 'entropy'],
-    #                'min_samples_split': [15, 16, 17, 18, 19, 20, 21, 22, 23],
-    #                'min_samples_leaf': [5, 6, 7, 8],
-    #                'max_depth': [12, 13, 14, 15, 16, 17],
-    #                'bootstrap': [True]}
+    paramgrid = {'kernel': ['rbf', 'poly', 'sigmoid'],
+                 'gamma': [.01, 'auto', 1.0, 5.0, 10.0],
+                 'C': [.01, .1, 1.0, 10.0]}
+    model = SVC()
     # model = RandomForestClassifier(n_jobs=-1)
-    # model, gridsearch = gridsearch(rfparamgrid, model, X_train_bw, y_train_b)
-    # model = SVC()
-    model = GaussianNB()
-    model = evaluate_model(model, X_train_bw, y_train_b)
+    model, gridsearch = gridsearch(paramgrid, model, X_train_bw, y_train_b)
+    # model = GaussianNB()
+    # model = evaluate_model(model, X_train_bw, y_train_b)
     print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train_b, y_train_b)
     confusion_matrix(y_train_b, model.predict(X_train_b))
