@@ -5,6 +5,8 @@ from sklearn.cross_validation import train_test_split
 import pandas as pd
 from imblearn.under_sampling import RandomUnderSampler
 from classification_model import *
+from sklearn.ensemble import VotingClassifier
+from sklearn.metrics import classification_report, confusion_matrix
 
 
 def plot_roc_curve(model, X, y, modelname):
@@ -22,9 +24,10 @@ def plot_roc_curve(model, X, y, modelname):
     plt.plot(fpr, tpr, label=modelname)
 
 
-def plot_multiple_roc_curves(X_test_b, y_test_b):
+def plot_multiple_roc_curves(model_tuple_list, X_test_b, y_test_b):
     '''
     INPUT
+         - model_tuple_list - list of tuples of the models (name, model)
          - X_test_b - 2d array of features
          - y_test_b - 1d array of targets
     OUTPUT
@@ -32,10 +35,30 @@ def plot_multiple_roc_curves(X_test_b, y_test_b):
 
     Returns none
     '''
+    for model_tuple in model_tuple_list:
+        name, model = model_tuple
+        plot_roc_curve(model, X_test_b, y_test_b, name)
+    plt.legend(loc='best')
+    plt.xlabel('False Negative Rate = 1-Recall')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC Curve Comparison of Different Models')
+    plt.show()
+
+
+def load_models_and_model_list():
+    '''
+    INPUT
+         - none
+    OUTPUT
+         - list of tuples where the tuple has (model_name, model)
+         - model_list: list of the different models
+         - model_name_list: list of model names for label printing
+    Returns the list of model information loaded from the pkl files
+    '''
     with open('models/tuned_random_forest_model.pkl') as rf:
         rf_model = pickle.load(rf)
-    with open('models/tuned_svm_sigmoid_model.pkl') as sigmoid:
-        sigmoidsvc_model = pickle.load(sigmoid)
+    # with open('models/tuned_svm_sigmoid_model.pkl') as sigmoid:
+    #     sigmoidsvc_model = pickle.load(sigmoid)
     with open('models/vanilla_gaussian_nb_model.pkl') as gnb:
         gnb_model = pickle.load(gnb)
     with open('models/tuned_svm_rbf_model.pkl') as rbf:
@@ -44,17 +67,37 @@ def plot_multiple_roc_curves(X_test_b, y_test_b):
         gbc_model = pickle.load(gbc)
     with open('models/tuned_gboostc_model.pkl') as tgbc:
         tgbc_model = pickle.load(tgbc)
-    plot_roc_curve(rf_model, X_test_b, y_test_b, 'RandomForest')
-    plot_roc_curve(sigmoidsvc_model, X_test_b, y_test_b, 'SVM_sigmoid')
-    plot_roc_curve(rbfsvc_model, X_test_b, y_test_b, 'SVM_rbf')
-    plot_roc_curve(gnb_model, X_test_b, y_test_b, 'GaussianNB')
-    plot_roc_curve(gbc_model, X_test_b, y_test_b, 'GradientBC')
-    plot_roc_curve(tgbc_model, X_test_b, y_test_b, 'Tuned_GradientBC')
-    plt.legend(loc='best')
-    plt.xlabel('False Negative Rate = 1-Recall')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC Curve Comparison of Different Models')
-    plt.show()
+    model_list = [rf_model, gnb_model, rbfsvc_model,
+                  gbc_model, tgbc_model]
+    model_names = ['Tuned Random Forest', 'GaussianNB',
+                   'SVC RBF', 'Vanilla Gradient Boosting',
+                   'Tuned Gradient Boosting']
+    return [(model_name,
+             model) for model_name, model in zip(model_names, model_list)]
+
+
+def retrain_models(model_tuple_list, X_train_b, y_train_b):
+    '''
+    INPUT
+         - model_list: list of preconfigured models
+         - X_train_b: 2d array of features
+         - y_train_b: 1d array of labels
+    OUTPUT
+         - model_list: models that are re_fit to the training data
+
+    Returns trained models
+    '''
+    trained_model_list = []
+    for model_tuple in model_tuple_list:
+        name, model = model_tuple
+        model.fit(X_train_b, y_train_b)
+        trained_model_list.append((name, model))
+    return trained_model_list
+
+
+def create_voting_classifier_ensemble(model_tuple_list):
+    ensemble = VotingClassifier(model_tuple_list)
+    return ensemble
 
 
 if __name__ == "__main__":
@@ -69,4 +112,8 @@ if __name__ == "__main__":
                                            X_train, y_train)
     X_test_b, y_test_b = balance_classes(RandomUnderSampler(),
                                          X_test, y_test)
-    plot_multiple_roc_curves(X_test_b, y_test_b)
+    model_tuple_list = load_models_and_model_list()
+    model_tuple_list = retrain_models(model_tuple_list, X_train_b, y_train_b)
+    ensemble = VotingClassifier(model_tuple_list, voting='soft')
+    ensemble.fit(X_train_b, y_train_b)
+    plot_multiple_roc_curves(model_tuple_list+[('ensemble', ensemble)], X_test_b, y_test_b)
