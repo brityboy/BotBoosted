@@ -7,6 +7,7 @@ from imblearn.under_sampling import RandomUnderSampler
 from classification_model import *
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics import classification_report, confusion_matrix
+from evaltestcvbs import EvalTestCVBS as Eval
 
 
 def plot_roc_curve(model, X, y, modelname):
@@ -117,3 +118,7 @@ if __name__ == "__main__":
     ensemble = VotingClassifier(model_tuple_list, voting='soft')
     ensemble.fit(X_train_b, y_train_b)
     plot_multiple_roc_curves(model_tuple_list+[('ensemble', ensemble)], X_test_b, y_test_b)
+    print("this is the model performance on different split ratios\n")
+    etcb = Eval(ensemble, .05, .5, .05, 100)
+    etcb.evaluate_data(X_test_b, y_test_b)
+    etcb.plot_performance()
