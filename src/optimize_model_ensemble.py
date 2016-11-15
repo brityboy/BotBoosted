@@ -97,8 +97,31 @@ def retrain_models(model_tuple_list, X_train_b, y_train_b):
 
 
 def create_voting_classifier_ensemble(model_tuple_list):
-    ensemble = VotingClassifier(model_tuple_list)
+    '''
+    INPUT
+         - model tuple list: list of model tuples (name, model)
+    OUTPUT
+         - a fit ensemble
+
+    Return fit voting ensemble
+    '''
+    ensemble = VotingClassifier(model_tuple_list, voting='soft')
+    ensemble.fit(X_train_b, y_train_b)
     return ensemble
+
+
+def write_model_to_pkl(model, model_name):
+    '''
+    INPUT
+         - model_name: str, this is the name of the model
+         - model: the sklearn classification model that will be saved
+    OUTPUT
+         - saves the model to a pkl file
+    Returns None
+    '''
+    with open('models/{}_model.pkl'.format(model_name), 'w+') as f:
+        pickle.dump(model, f)
+
 
 
 if __name__ == "__main__":
@@ -115,10 +138,11 @@ if __name__ == "__main__":
                                          X_test, y_test)
     model_tuple_list = load_models_and_model_list()
     model_tuple_list = retrain_models(model_tuple_list, X_train_b, y_train_b)
-    ensemble = VotingClassifier(model_tuple_list, voting='soft')
-    ensemble.fit(X_train_b, y_train_b)
+    ensemble = create_voting_classifier_ensemble(model_tuple_list)
     plot_multiple_roc_curves(model_tuple_list+[('ensemble', ensemble)], X_test_b, y_test_b)
     print("this is the model performance on different split ratios\n")
-    etcb = Eval(ensemble, .05, .5, .05, 100)
+    etcb = Eval(ensemble, .05, .95, .05, 10)
     etcb.evaluate_data(X_test_b, y_test_b)
     etcb.plot_performance()
+    ensemble.fit(np.vstack((X_train_b, X_test_b)), np.hstack((y_train_b, y_test_b)))
+    write_model_to_pkl(ensemble, 'voting_ensemble')
