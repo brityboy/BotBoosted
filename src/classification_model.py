@@ -3,7 +3,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.cross_validation import train_test_split, cross_val_score
 from process_loaded_data import *
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import RandomOverSampler, SMOTE
 from sklearn.cluster import DBSCAN
@@ -161,6 +161,7 @@ def gridsearch(paramgrid, model, X_train, y_train):
     print(gridsearch.best_score_)
     return best_model, gridsearch
 
+
 def get_igr_attribute_weights(X_train_b, y_train_b, df):
     '''
     INPUT
@@ -189,14 +190,16 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
     X_train_b, y_train_b = balance_classes(RandomUnderSampler(),
                                            X_train, y_train)
+    X_test_b, y_test_b = balance_classes(RandomUnderSampler(),
+                                         X_test, y_test)
     weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
     X_train_bw = X_train_b * weights
-    rfparamgrid = {'n_estimators': [100],
+    rfparamgrid = {'n_estimators': [200],
                    'max_features': ['auto'],
                    'criterion': ['gini', 'entropy'],
-                   'min_samples_split': [17, 20, 23],
-                   'min_samples_leaf': [1, 5, 10],
-                   'max_depth': [12, 13, 14, 15, 16],
+                   'min_samples_split': [15, 16, 17, 18, 19, 20, 21, 22, 23],
+                   'min_samples_leaf': [5, 6, 7, 8],
+                   'max_depth': [12, 13, 14, 15, 16, 17],
                    'bootstrap': [True]}
     model = RandomForestClassifier(n_jobs=-1)
     model, gridsearch = gridsearch(rfparamgrid, model, X_train_bw, y_train_b)
@@ -204,13 +207,15 @@ if __name__ == "__main__":
     # model = evaluate_model(model, X_train_b, y_train_b)
     print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train_b, y_train_b)
+    confusion_matrix(y_train_b, model.predict(X_train_b))
     print("this is the model performance on the test data\n")
-    view_classification_report(model, X_test, y_test)
+    view_classification_report(model, X_test_b, y_test_b)
+    confusion_matrix(y_test_b, model.predict(X_test_b))
     print("this is the model performance on different split ratios\n")
-    etcb = Eval(model, .05, .7, .05, 10)
+    etcb = Eval(model, .05, .7, .05, 100)
     etcb.evaluate_data(X_test, y_test)
     etcb.plot_performance()
-    print model
-    # print("\nthese are the model feature importances\n")
-    # view_feature_importances(df, model)
-    # write_model_to_pkl(model, 'vanilla_random_forest')
+    print("\nthese are the model feature importances\n")
+    view_feature_importances(df, model)
+    print(model)
+    # write_model_to_pkl(model, 'tuned_random_forest')
