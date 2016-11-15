@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from prediction_model import *
 from sklearn.cross_validation import train_test_split
-from sklearn.metrics import precision_score, recall_score
+from sklearn.metrics import precision_score, recall_score, confusion_matrix
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 
@@ -68,6 +68,8 @@ class EvalTestCVBS(object):
         self.avg_recall_0 = []
         self.avg_precision_1 = []
         self.avg_recall_1 = []
+        self.avg_fpr = []
+        self.avg_fnr = []
         self.std_precision_0 = []
         self.std_recall_0 = []
         self.std_precision_1 = []
@@ -83,6 +85,8 @@ class EvalTestCVBS(object):
             recall_0 = []
             precision_1 = []
             recall_1 = []
+            fpr_list = []
+            fnr_list = []
             for i in xrange(self.n_jobs):
                 print('currently doing job {} for {} percent'.
                       format(i+1, percent))
@@ -94,16 +98,25 @@ class EvalTestCVBS(object):
                                     X_pos[ix_draw_pos]))
                 test_y = np.hstack((np.zeros(n_draw_neg), np.ones(n_draw_pos)))
                 y_pred = self.model.predict(test_X)
+
                 precision_0.append(precision_score(test_y, y_pred,
                                                    pos_label=0))
                 recall_0.append(recall_score(test_y, y_pred, pos_label=0))
                 precision_1.append(precision_score(test_y, y_pred,
                                                    pos_label=1))
                 recall_1.append(recall_score(test_y, y_pred, pos_label=1))
+                fp = confusion_matrix(test_y, y_pred)[0, 1]
+                n = np.sum(confusion_matrix(test_y, y_pred)[0])
+                fn = confusion_matrix(test_y, y_pred)[1, 0]
+                p = np.sum(confusion_matrix(test_y, y_pred)[1])
+                fpr_list.append(float(fp)/n)
+                fnr_list.append(float(fn)/p)
             self.avg_precision_0.append(np.mean(precision_0))
             self.avg_recall_0.append(np.mean(recall_0))
             self.avg_precision_1.append(np.mean(precision_1))
             self.avg_recall_1.append(np.mean(recall_1))
+            self.avg_fpr.append(np.mean(fpr_list))
+            self.avg_fnr.append(np.mean(fnr_list))
             self.std_precision_0.append(np.std(precision_0, ddof=1))
             self.std_recall_0.append(np.std(recall_0, ddof=1))
             self.std_precision_1.append(np.std(precision_1, ddof=1))
@@ -121,6 +134,8 @@ class EvalTestCVBS(object):
         plt.plot(self.percent_range, self.avg_recall_0, label='recall_0')
         plt.plot(self.percent_range, self.avg_precision_1, label='precision_1')
         plt.plot(self.percent_range, self.avg_recall_1, label='recall_1')
+        plt.plot(self.percent_range, self.avg_fpr, label='fpr')
+        plt.plot(self.percent_range, self.avg_fnr, label='fnr')
         plt.legend(loc='best')
         plt.title('Model Precision and Recall at Different Split Percentages')
         plt.xlabel('Split Percentages')
@@ -138,6 +153,6 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
     model = RandomForestClassifier(n_jobs=-1)
     model.fit(X_train, y_train)
-    etcb = EvalTestCVBS(model, .05, .2, .05, 10000)
+    etcb = EvalTestCVBS(model, .05, .2, .05, 10)
     etcb.evaluate_data(X_test, y_test)
     etcb.plot_performance()
