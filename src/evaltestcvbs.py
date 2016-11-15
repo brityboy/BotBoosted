@@ -89,7 +89,7 @@ class EvalTestCVBS(object):
                 ix_draw_pos = np.random.choice(n_pos_total, n_draw_pos,
                                                replace=True)
                 ix_draw_neg = np.random.choice(n_neg_total, n_draw_neg,
-                                                      replace=True)
+                                               replace=True)
                 test_X = np.vstack((X_neg[ix_draw_neg],
                                     X_pos[ix_draw_pos]))
                 test_y = np.hstack((np.zeros(n_draw_neg), np.ones(n_draw_pos)))
@@ -138,6 +138,6 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
     model = RandomForestClassifier(n_jobs=-1)
     model.fit(X_train, y_train)
-    etcb = EvalTestCVBS(model, .05, .7, .05, 10)
+    etcb = EvalTestCVBS(model, .05, .2, .05, 10000)
     etcb.evaluate_data(X_test, y_test)
     etcb.plot_performance()
