@@ -5,7 +5,7 @@ from sklearn.cross_validation import train_test_split, cross_val_score
 from process_loaded_data import *
 from sklearn.metrics import classification_report, confusion_matrix
 from imblearn.under_sampling import RandomUnderSampler
-from imblearn.over_sampling import RandomOverSampler, SMOTE
+from imblearn.over_sampling import RandomOverSampler, ADASYN
 from sklearn.cluster import DBSCAN
 import numpy as np
 import dill as pickle
@@ -13,6 +13,7 @@ import pandas as pd
 from evaltestcvbs import EvalTestCVBS as Eval
 import information_gain_ratio as igr
 from sklearn.grid_search import GridSearchCV
+from sklearn.svm import SVC
 
 
 def evaluate_model(model, X_train, y_train):
@@ -85,20 +86,6 @@ def view_classification_report(model, X_test, y_test):
     Returns none
     '''
     print(classification_report(y_test, model.predict(X_test)))
-
-
-def check_classifier_with_different_test_subsamples(model, X_test, y_test):
-    '''
-    INPUT
-         - model: classifier model fit with sklearn
-         - X_test: 2d array of the features
-         - y_test: 1d array of the target
-    OUTPUT
-         - classification report for different classifier output splits
-    returns nothing
-    '''
-    stepsets = np.arange(start=0.05, stop=1, step=.05)
-    pass
 
 
 def write_model_to_pkl(model, model_name):
@@ -194,17 +181,25 @@ if __name__ == "__main__":
                                          X_test, y_test)
     weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
     X_train_bw = X_train_b * weights
-    rfparamgrid = {'n_estimators': [200],
-                   'max_features': ['auto'],
-                   'criterion': ['gini', 'entropy'],
-                   'min_samples_split': [15, 16, 17, 18, 19, 20, 21, 22, 23],
-                   'min_samples_leaf': [5, 6, 7, 8],
-                   'max_depth': [12, 13, 14, 15, 16, 17],
-                   'bootstrap': [True]}
-    model = RandomForestClassifier(n_jobs=-1)
-    model, gridsearch = gridsearch(rfparamgrid, model, X_train_bw, y_train_b)
-    # model = GaussianNB()
-    # model = evaluate_model(model, X_train_b, y_train_b)
+    # rfparamgrid = {'n_estimators': [200],
+    #                'max_features': ['auto'],
+    #                'criterion': ['gini', 'entropy'],
+    #                'min_samples_split': [15, 16, 17, 18, 19, 20, 21, 22, 23],
+    #                'min_samples_leaf': [5, 6, 7, 8],
+    #                'max_depth': [12, 13, 14, 15, 16, 17],
+    #                'bootstrap': [True]}
+    # svmparamgrid = {'kernel': ['rbf', 'poly', 'sigmoid'],
+    #                'gamma': ['auto', .01, ],
+    #                'criterion': ['gini', 'entropy'],
+    #                'min_samples_split': [15, 16, 17, 18, 19, 20, 21, 22, 23],
+    #                'min_samples_leaf': [5, 6, 7, 8],
+    #                'max_depth': [12, 13, 14, 15, 16, 17],
+    #                'bootstrap': [True]}
+    # model = RandomForestClassifier(n_jobs=-1)
+    # model, gridsearch = gridsearch(rfparamgrid, model, X_train_bw, y_train_b)
+    # model = SVC()
+    model = GaussianNB()
+    model = evaluate_model(model, X_train_bw, y_train_b)
     print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train_b, y_train_b)
     confusion_matrix(y_train_b, model.predict(X_train_b))
@@ -212,10 +207,10 @@ if __name__ == "__main__":
     view_classification_report(model, X_test_b, y_test_b)
     confusion_matrix(y_test_b, model.predict(X_test_b))
     print("this is the model performance on different split ratios\n")
-    etcb = Eval(model, .05, .7, .05, 100)
-    etcb.evaluate_data(X_test, y_test)
+    etcb = Eval(model, .05, .5, .05, 100)
+    etcb.evaluate_data(X_test_b, y_test_b)
     etcb.plot_performance()
-    print("\nthese are the model feature importances\n")
-    view_feature_importances(df, model)
-    print(model)
-    # write_model_to_pkl(model, 'tuned_random_forest')
+    # print("\nthese are the model feature importances\n")
+    # view_feature_importances(df, model)
+    # print(model)
+    # write_model_to_pkl(model, 'vanilla_gaussian_nb')
