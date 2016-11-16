@@ -59,7 +59,7 @@ def create_dictionary_with_id_and_predictions(model, user_id_array, X,
 
 
 if __name__ == "__main__":
-    model = load_pickled_model('models/vanilla_random_forest_model.pkl')
+    model = load_pickled_model('models/voting_ensemble_model.pkl')
     user_id_array, X = \
         load_processed_csv_for_predictions('data/trumpmillion.csv')
     create_dictionary_with_id_and_predictions(model, user_id_array, X,
