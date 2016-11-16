@@ -4,7 +4,7 @@ import pandas as pd
 import twokenize as tw
 import re
 import string
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 from collections import Counter
 from itertools import combinations
@@ -101,19 +101,38 @@ def word_count_vectorizer(documents):
     return vect, word_counts_matrix
 
 
+def tfidf_vectorizer(documents):
+    '''
+    INPUT
+         - list of documents
+    OUTPUT
+         - tfidf: text vectorizer object
+         - tfidf_matrix: sparse matrix of word counts
+
+    Processes the documents corpus using a tfidf vectorizer
+    '''
+    tfidf = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = tfidf.fit_transform(documents)
+    return tfidf, tfidf_matrix
+
+
 def fit_LDA(matrix, n_topics):
     '''
     INPUT
          - matrix: takes in a sparse word count matrix
     OUTPUT
          - topics: matrix
+         - topic_label: list
     Returns the topic matrix for the specified number of topics requested
     rows pertain to the different words, the columns pertain to the different
-    topics
+    topics; and a list that has the label for that topic
     '''
+    topic_label = []
     lda = LatentDirichletAllocation(n_topics=n_topics, n_jobs=-1)
     topics = lda.fit_transform(matrix)
-    return topics
+    for document in topics:
+        topic_label.append(np.argmax(document))
+    return topics, topic_label
 
 
 def compute_inter_topic_distance(topics):
@@ -150,10 +169,8 @@ if __name__ == "__main__":
     #     print(i, tokenize_tweet(document))
     # print(fix_the_sequence_of_repeated_characters("TTTCCGACTTTTTGACTTACGAAAAAA"))
     # print tw.emoticons.analyze_tweet(':)')
-    vectorizer, word_counts_matrix = word_count_vectorizer(documents)
+    # vectorizer, word_counts_matrix = word_count_vectorizer(documents)
     # topics = fit_LDA(word_counts_matrix, 10)
-    topic_label = []
-    for document in topics:
-        topic_label.append(np.argmax(document))
     # with open('data/lda_sample.pkl', 'w+') as f:
     #     pickle.dump(topics, f)
+    tfidf, tfidf_matrix = tfidf_vectorizer(documents)
