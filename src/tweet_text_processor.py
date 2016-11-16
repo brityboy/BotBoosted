@@ -15,6 +15,9 @@ from sklearn.decomposition import NMF
 from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
 from information_gain_ratio import *
+from unidecode import unidecode
+import multiprocessing as mp
+import threading
 
 def fix_the_sequence_of_repeated_characters(word):
     '''
@@ -251,7 +254,7 @@ def plot_the_max_topic_count(max_topic_count, dist_list, topic_range):
     plt.show()
 
 
-def compute_for_doc_importance(matrix, topic_label):
+def compute_for_doc_importance(tfidf, matrix, topic_label):
     '''
     INPUT
          - matrix - the sparse matrix (document, word) information
@@ -260,12 +263,65 @@ def compute_for_doc_importance(matrix, topic_label):
          - igr_list - list
 
     Computes for the information gain ratio of each word with the topic as
-    the label given the following procedure
+    the label given the following procedure, bag_of_words
+
+    this is the sequential method for doing this
     '''
     igr_list = []
-    mat = np.hstack((tfidf_matrix.todense(),
-                     np.array(topic_label)[:, np.newaxis]))
+    bag_of_words = map(unidecode, tfidf.vocabulary_.keys())
+    n_words = len(bag_of_words)
+    topic_label = np.array(map(str, topic_label))
+    word_df = pd.DataFrame(matrix.todense(), columns=bag_of_words)
+    for i, word in enumerate(word_df):
+        print('we are on word {} out of {} words'.format(i, n_words))
+        igr_list.append(information_gain_ratio_continuous(word, word_df,
+                                                          topic_label))
+    del word_df
+    return igr_list, bag_of_words
 
+
+def compute_for_doc_importance_parallel(tfidf, matrix, topic_label):
+    '''
+    INPUT
+         - matrix - the sparse matrix (document, word) information
+         - topic_label - the topic into which this document falls
+    OUTPUT
+         - igr_list - list
+
+    Computes for the information gain ratio of each word with the topic as
+    the label given the following procedure, bag_of_words
+
+    This procedure uses multiprocessing and threading in order to
+    '''
+    igr_list = []
+    bag_of_words = map(unidecode, tfidf.vocabulary_.keys())
+    n_words = len(bag_of_words)
+    topic_label = np.array(map(str, topic_label))
+    word_df = pd.DataFrame(matrix.todense(), columns=bag_of_words)
+    cpu_count = mp.cpu_count()
+    pool = mp.Pool(processes=cpu_count)
+    results = pool.map(sequential_igr_computation, bag_of_words)
+    return igr_list, bag_of_words
+
+
+def sequential_igr_threading(bag_of_words, word_df, topic_label):
+    '''
+    INPUT
+         - word_list: list of words
+         - word_df: the dataframe that has the tfidf and word information
+    OUTPUT
+         - a list of information_gain_ratio_information
+    Returns a list of information_gain_ratio given a list of words
+    '''
+    threads = len(bag_of_words)
+    jobs = []
+    for i in xrange(0, threads):
+        thread = threading.Thread(target=information_gain_ratio_continuous,
+                                  args=(bag_of_words[i], word_df, topic_label))
+        jobs.append(thread)
+        thread.start()
+    for j in jobs:
+        j.join()
 
 if __name__ == "__main__":
     df = pd.read_csv('data/clintontweets.csv')
@@ -285,8 +341,9 @@ if __name__ == "__main__":
     #     pickle.dump(topics, f)
     print('creating the tfidf_matrix')
     tfidf, tfidf_matrix = tfidf_vectorizer(documents)
-    print('exploring the nmf topic range')
-    max_topic_count, dist_list, \
-        topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
-    plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
+    # print('exploring the nmf topic range')
+    # max_topic_count, dist_list, \
+    #     topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
+    # plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
+    max_topic_count = 5
     W, H, nmf, topic_label = fit_nmf(tfidf_matrix, max_topic_count)
