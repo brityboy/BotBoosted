@@ -14,7 +14,7 @@ from dill import pickle
 from sklearn.decomposition import NMF
 from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
-
+from information_gain_ratio import *
 
 def fix_the_sequence_of_repeated_characters(word):
     '''
@@ -222,17 +222,18 @@ def explore_nmf_topic_range(n_min, n_max, matrix):
     each topic count specified
     '''
     dist_list = []
-    for n_topics in xrange(n_min, n_max):
+    topic_range = range(n_min, n_max)
+    for n_topics in topic_range:
         print('currently building NMF with {}'.format(n_topics))
         W, H, nmf, topic_label = fit_nmf(matrix, n_topics)
         print('computing inter_topic_distance for {}'.format(n_topics))
         avg_itd, _ = get_inter_nmf_topic_distance(H, topic_label)
         dist_list.append(avg_itd)
     max_topic_count = np.argmax(np.array(dist_list))
-    return max_topic_count, dist_list
+    return max_topic_count, dist_list, topic_range
 
 
-def plot_the_max_topic_count(dist_list):
+def plot_the_max_topic_count(max_topic_count, dist_list, topic_range):
     '''
     INPUT
          - the dist_list from the explore_nmf_topic_range function
@@ -240,10 +241,30 @@ def plot_the_max_topic_count(dist_list):
          - plots the inter topic distance and shows the
     Returns nothing
     '''
-    plt.plot(range(len(dist_list)), dist_list)
-    plt.xlabel('number of topics')
-    plt.ylabel('average inter topic distance')
+    plt.plot(topic_range, dist_list, label='average inter topic distance')
+    plt.title('Topic Count to Choose is {}'.format(max_topic_count))
+    plt.xlabel('Number of Topics')
+    plt.ylabel('Average Inter-Topic Distance')
+    plt.axvline(x=max_topic_count, color='k', linestyle='--',
+                label='n_topics for max inter_topic_dist')
+    plt.legend(loc='best')
     plt.show()
+
+
+def compute_for_doc_importance(matrix, topic_label):
+    '''
+    INPUT
+         - matrix - the sparse matrix (document, word) information
+         - topic_label - the topic into which this document falls
+    OUTPUT
+         - igr_list - list
+
+    Computes for the information gain ratio of each word with the topic as
+    the label given the following procedure
+    '''
+    igr_list = []
+    mat = np.hstack((tfidf_matrix.todense(),
+                     np.array(topic_label)[:, np.newaxis]))
 
 
 if __name__ == "__main__":
@@ -265,5 +286,7 @@ if __name__ == "__main__":
     print('creating the tfidf_matrix')
     tfidf, tfidf_matrix = tfidf_vectorizer(documents)
     print('exploring the nmf topic range')
-    max_topic_count, dist_list = explore_nmf_topic_range(2, 20, tfidf_matrix)
-    plot_the_max_topic_count(dist_list)
+    max_topic_count, dist_list, \
+        topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
+    plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
+    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, max_topic_count)
