@@ -76,7 +76,7 @@ def tokenize_tweet(text):
         elif token[0] == '@':
             pass
         elif mentions:
-            pass
+            token_list.append('user_mention')
         elif token == 'RT':
             pass
         elif token == 'Retweeted':
@@ -90,6 +90,11 @@ def tokenize_tweet(text):
             token = fix_the_sequence_of_repeated_characters(token)
             token_list.append(token)
     return ' '.join(token_list)
+
+
+def tokenize_tweet_sequentially(documents):
+    return [tokenize_tweet(document) for document in
+            documents if type(document) == str]
 
 
 def word_count_vectorizer(documents):
