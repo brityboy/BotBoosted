@@ -19,6 +19,7 @@ from unidecode import unidecode
 import multiprocessing as mp
 import threading
 import time
+from scipy.spatial.distance import cosine
 
 def fix_the_sequence_of_repeated_characters(word):
     '''
@@ -248,12 +249,16 @@ def get_inter_nmf_topic_distance(H, topic_label, weighted=False):
     '''
     # topic_weight_dict = Counter(topic_label)
     n_topics = H.shape[0]
+    H = H/np.sum(H, axis=1).reshape(-1, 1)
     doc_distance_list = []
     for pair in combinations(range(n_topics), 2):
         item1, item2 = pair
-        doc_distance_list.append((pair, 1-cosine_similarity(H[item1], H[item2])))
-    avg_inter_topic_distance = np.mean([item[1][0] for
-                                        item in doc_distance_list])
+        # doc_distance_list.append(cosine(H[item1], H[item2]))
+        # doc_distance_list.append(np.linalg.norm(H[item1]-H[item2]))
+        vector1 = dit.ScalarDistribution(H[item1])
+        vector2 = dit.ScalarDistribution(H[item2])
+        doc_distance_list.append(jensen_shannon_divergence([vector1, vector2]))
+    avg_inter_topic_distance = np.mean(doc_distance_list)
     return avg_inter_topic_distance, doc_distance_list
 
 
@@ -272,7 +277,7 @@ def explore_nmf_topic_range(n_min, n_max, matrix):
     each topic count specified
     '''
     dist_list = []
-    topic_range = range(n_min, n_max)
+    topic_range = range(n_min, n_max+1)
     for n_topics in topic_range:
         print('currently building NMF with {}'.format(n_topics))
         W, H, nmf, topic_label = fit_nmf(matrix, n_topics)
@@ -375,10 +380,11 @@ if __name__ == "__main__":
     print('tokenizing tweets')
     documents = [document for document in
                  df.text.values if type(document) == str]
-    # start = time.time()
+    start = time.time()
     tokenized_tweets = multiprocess_tokenize_tweet(documents)
+    tokenized_tweets = np.array(tokenized_tweets).flatten()
+    print "multiprocess tokenizing: ", time.time() - start
     # tokenized_tweets = [tokenize_tweet(document) for document in documents]
-    # print "serial tweet tokenizing: ", time.time() - start
     # text = df.text.values[49723]
     # text = documents[32]
     # for i, document in enumerate(documents):
@@ -386,15 +392,19 @@ if __name__ == "__main__":
     # s = "TTTCCGACTTTTTGACTTACGAAAAAA"
     # print(fix_the_sequence_of_repeated_characters(s))
     # print tw.emoticons.analyze_tweet(':)')
-    vectorizer, word_counts_matrix = word_count_vectorizer(documents)
+    # vectorizer, word_counts_matrix = word_count_vectorizer(documents)
     # topics = fit_LDA(word_counts_matrix, 10)
     # with open('data/lda_sample.pkl', 'w+') as f:
     #     pickle.dump(topics, f)
-    # print('creating the tfidf_matrix')
-    # tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
-    # print('exploring the nmf topic range')
-    # max_topic_count, dist_list, \
-    #     topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
-    # plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
+    print('creating the tfidf_matrix')
+    start = time.time()
+    tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
+    print "tfidf vectorizing: ", time.time() - start
+    print('exploring the nmf topic range')
+    start = time.time()
+    max_topic_count, dist_list, \
+        topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
+    print "nmf exploration: ", time.time() - start
+    plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
     # max_topic_count = 5
-    # W, H, nmf, topic_label = fit_nmf(tfidf_matrix, max_topic_count)
+    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, max_topic_count)
