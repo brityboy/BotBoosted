@@ -125,7 +125,8 @@ def multiprocess_tokenize_tweet(documents):
     n_processes = mp.cpu_count()
     p = mp.Pool(n_processes)
     split_docs = split_list(documents, n_processes)
-    return p.map(tokenize_tweet_list, split_docs)
+    tokenized_tweets = p.map(tokenize_tweet_list, split_docs)
+    return [item for row in tokenized_tweets for item in row]
 
 
 def tokenize_tweet_list(split_docs):
@@ -372,7 +373,6 @@ if __name__ == "__main__":
                  df.text.values if type(document) == str]
     start = time.time()
     tokenized_tweets = multiprocess_tokenize_tweet(documents)
-    tokenized_tweets = np.array(tokenized_tweets).flatten()
     print "multiprocess tokenizing: ", time.time() - start
     # tokenized_tweets = [tokenize_tweet(document) for document in documents]
     # text = df.text.values[49723]
