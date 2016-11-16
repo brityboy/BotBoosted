@@ -284,7 +284,7 @@ def explore_nmf_topic_range(n_min, n_max, matrix):
         print('computing inter_topic_distance for {}'.format(n_topics))
         avg_itd, _ = get_inter_nmf_topic_distance(H, topic_label)
         dist_list.append(avg_itd)
-    max_topic_count = np.argmax(np.array(dist_list))
+    max_topic_count = topic_range[np.argmax(np.array(dist_list))]
     return max_topic_count, dist_list, topic_range
 
 
@@ -356,27 +356,17 @@ def compute_for_doc_importance_parallel(tfidf, matrix, topic_label):
     return igr_list, bag_of_words
 
 
-def sequential_igr_threading(bag_of_words, word_df, topic_label):
+def unpack_tuple_for_information_gain_ratio_computation(info_tuple):
     '''
     INPUT
-         - word_list: list of words
-         - word_df: the dataframe that has the tfidf and word information
     OUTPUT
-         - a list of information_gain_ratio_information
-    Returns a list of information_gain_ratio given a list of words
+
+    Returns
     '''
-    threads = len(bag_of_words)
-    jobs = []
-    for i in xrange(0, threads):
-        thread = threading.Thread(target=information_gain_ratio_continuous,
-                                  args=(bag_of_words[i], word_df, topic_label))
-        jobs.append(thread)
-        thread.start()
-    for j in jobs:
-        j.join()
+
 
 if __name__ == "__main__":
-    df = pd.read_csv('data/clintontweets.csv')
+    df = pd.read_csv('data/trumptweets.csv')
     print('tokenizing tweets')
     documents = [document for document in
                  df.text.values if type(document) == str]
@@ -406,5 +396,4 @@ if __name__ == "__main__":
         topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
     print "nmf exploration: ", time.time() - start
     plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
-    # max_topic_count = 5
-    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, max_topic_count)
+    # W, H, nmf, topic_label = fit_nmf(tfidf_matrix, max_topic_count)
