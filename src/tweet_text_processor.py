@@ -333,7 +333,7 @@ def compute_for_doc_importance(tfidf, matrix, topic_label):
     return igr_list, bag_of_words
 
 
-def compute_for_doc_importance_parallel(tfidf, matrix, topic_label):
+def compute_doc_importance_parallel(tfidf, matrix, topic_label):
     '''
     INPUT
          - matrix - the sparse matrix (document, word) information
@@ -351,19 +351,30 @@ def compute_for_doc_importance_parallel(tfidf, matrix, topic_label):
     n_words = len(bag_of_words)
     topic_label = np.array(map(str, topic_label))
     word_df = pd.DataFrame(matrix.todense(), columns=bag_of_words)
-    cpu_count = mp.cpu_count()
-    pool = mp.Pool(processes=cpu_count)
-    results = pool.map(sequential_igr_computation, bag_of_words)
+    n_processes = mp.cpu_count()
+    pool = mp.Pool(processes=n_processes)
+    info_tuple_list = [(word, word_df, topic_label) for word in bag_of_words]
+    split_info_tuple_list = split_list(info_tuple_list, n_processes)
+    start = time.time()
+    results = pool.map(tuple_igr_computation, split_info_tuple_list)
+    print "multiprocessing igr computation: ", time.time() - start
     return igr_list, bag_of_words
 
 
-def unpack_tuple_for_information_gain_ratio_computation(info_tuple):
+def tuple_igr_computation(info_tuple):
     '''
     INPUT
+         - info_tuple containing (attribute, dataframe, and y)
     OUTPUT
-
+         - information_gain_ratio: float
     Returns
     '''
+    attribute, df, y = info_tuple
+    print attribute
+    try:
+        return information_gain_ratio_continuous(attribute, df, y)
+    except:
+        return attribute
 
 
 if __name__ == "__main__":
