@@ -12,3 +12,4 @@
 *.pkl
 emoticons.py
 twokenize.py
+TweetNLP.py
