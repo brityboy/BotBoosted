@@ -143,9 +143,11 @@ def determine_optimal_continuous_split_values(attribute, df, y):
     split_values = np.unique(sorted(attribute_value_array))[:-1]
     info_gain_list = []
     info_gain = 0
+    # possible_splits = list(combinations(split_values, 1)) + \
+    #     list(combinations(split_values, 2)) + \
+    #     list(combinations(split_values, 3))
     possible_splits = list(combinations(split_values, 1)) + \
-        list(combinations(split_values, 2)) + \
-        list(combinations(split_values, 3))
+        list(combinations(split_values, 2))
     for split in possible_splits:
         X_list, y_list = make_multiple_split(attribute_value_array, y, split)
         info_gain = multiple_information_gain(y, y_list, entropy)
