@@ -321,7 +321,7 @@ def compute_for_doc_importance(tfidf, matrix, topic_label):
     this is the sequential method for doing this
     '''
     igr_list = []
-    bag_of_words = map(unidecode, tfidf.vocabulary_.keys())
+    bag_of_words = map(unidecode, tfidf.get_feature_names())
     n_words = len(bag_of_words)
     topic_label = np.array(map(str, topic_label))
     word_df = pd.DataFrame(matrix.todense(), columns=bag_of_words)
@@ -331,6 +331,21 @@ def compute_for_doc_importance(tfidf, matrix, topic_label):
                                                           topic_label))
     del word_df
     return igr_list, bag_of_words
+
+
+def explore_important_words(tfidf, n_words):
+    '''
+    INPUT
+         - tfidf: the tfidf object
+         - n_words: n number of words to retrieve per topic
+    OUTPUT
+         - print the top n_words in each topic
+
+    Returns none
+    '''
+    vocab = np.array(map(str, tfidf.get_feature_names()))
+    for row in H:
+        print(vocab[np.argsort(row)[-n_words:]])
 
 
 def compute_doc_importance_parallel(tfidf, matrix, topic_label):
@@ -401,10 +416,10 @@ if __name__ == "__main__":
     start = time.time()
     tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
     print "tfidf vectorizing: ", time.time() - start
-    print('exploring the nmf topic range')
-    start = time.time()
-    max_topic_count, dist_list, \
-        topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
-    print "nmf exploration: ", time.time() - start
-    plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
-    # W, H, nmf, topic_label = fit_nmf(tfidf_matrix, max_topic_count)
+    # print('exploring the nmf topic range')
+    # start = time.time()
+    # max_topic_count, dist_list, \
+    #     topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
+    # print "nmf exploration: ", time.time() - start
+    # plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
+    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, 17)
