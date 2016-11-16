@@ -78,7 +78,7 @@ def tokenize_tweet(text):
         elif type(token) == int:
             pass
         elif emoticon:
-            token_list.append(tw.emoticons.analyze_tweet(token))
+            token_list.append(tw.emoticons.analyze_tweet(token).lower())
         else:
             token = token.translate(None, string.punctuation)
             token = fix_the_sequence_of_repeated_characters(token)
