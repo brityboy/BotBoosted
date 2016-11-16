@@ -18,6 +18,7 @@ from information_gain_ratio import *
 from unidecode import unidecode
 import multiprocessing as mp
 import threading
+import time
 
 def fix_the_sequence_of_repeated_characters(word):
     '''
@@ -92,9 +93,50 @@ def tokenize_tweet(text):
     return ' '.join(token_list)
 
 
-def tokenize_tweet_sequentially(documents):
-    return [tokenize_tweet(document) for document in
-            documents if type(document) == str]
+def split_list(doc_list, n_groups):
+    '''
+    INPUT
+         - doc_list - is a list of documents to be split up
+         - n_groups - is the number of groups to split the doc_list into
+    OUTPUT
+         - list
+    Returns a list of len n_groups which seeks to evenly split up the original
+    list into continuous sub_lists
+    '''
+    avg = len(doc_list) / float(n_groups)
+    split_lists = []
+    last = 0.0
+    while last < len(doc_list):
+        split_lists.append(doc_list[int(last):int(last + avg)])
+        last += avg
+    return split_lists
+
+
+def multiprocess_tokenize_tweet(documents):
+    '''
+    INPUT
+         - documents: this is a list of the documents to be tweet tokenized
+    OUTPUT
+         - list
+
+    Return a list of tokenized tweets done with multiprocessing
+    '''
+    n_processes = mp.cpu_count()
+    p = mp.Pool(n_processes)
+    split_docs = split_list(documents, n_processes)
+    return p.map(tokenize_tweet_list, split_docs)
+
+
+def tokenize_tweet_list(split_docs):
+    '''
+    INPUT
+         - split_docs: list of tweets to be tokenized
+    OUTPUT
+         - list of tokenized tweets
+
+    Returns a list of sequentially tokenized tweets
+    '''
+    return [tokenize_tweet(text) for text in split_docs]
 
 
 def word_count_vectorizer(documents):
@@ -209,7 +251,7 @@ def get_inter_nmf_topic_distance(H, topic_label, weighted=False):
     doc_distance_list = []
     for pair in combinations(range(n_topics), 2):
         item1, item2 = pair
-        doc_distance_list.append((pair, cosine_similarity(H[item1], H[item2])))
+        doc_distance_list.append((pair, 1-cosine_similarity(H[item1], H[item2])))
     avg_inter_topic_distance = np.mean([item[1][0] for
                                         item in doc_distance_list])
     return avg_inter_topic_distance, doc_distance_list
@@ -331,8 +373,12 @@ def sequential_igr_threading(bag_of_words, word_df, topic_label):
 if __name__ == "__main__":
     df = pd.read_csv('data/clintontweets.csv')
     print('tokenizing tweets')
-    documents = [tokenize_tweet(document) for document in
+    documents = [document for document in
                  df.text.values if type(document) == str]
+    # start = time.time()
+    tokenized_tweets = multiprocess_tokenize_tweet(documents)
+    # tokenized_tweets = [tokenize_tweet(document) for document in documents]
+    # print "serial tweet tokenizing: ", time.time() - start
     # text = df.text.values[49723]
     # text = documents[32]
     # for i, document in enumerate(documents):
@@ -340,15 +386,15 @@ if __name__ == "__main__":
     # s = "TTTCCGACTTTTTGACTTACGAAAAAA"
     # print(fix_the_sequence_of_repeated_characters(s))
     # print tw.emoticons.analyze_tweet(':)')
-    # vectorizer, word_counts_matrix = word_count_vectorizer(documents)
+    vectorizer, word_counts_matrix = word_count_vectorizer(documents)
     # topics = fit_LDA(word_counts_matrix, 10)
     # with open('data/lda_sample.pkl', 'w+') as f:
     #     pickle.dump(topics, f)
-    print('creating the tfidf_matrix')
-    tfidf, tfidf_matrix = tfidf_vectorizer(documents)
+    # print('creating the tfidf_matrix')
+    # tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
     # print('exploring the nmf topic range')
     # max_topic_count, dist_list, \
     #     topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
     # plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
-    max_topic_count = 5
-    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, max_topic_count)
+    # max_topic_count = 5
+    # W, H, nmf, topic_label = fit_nmf(tfidf_matrix, max_topic_count)
