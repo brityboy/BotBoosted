@@ -215,6 +215,8 @@ def get_intersection_columns_for_different_csv_files(checkdata):
 
 if __name__ == "__main__":
     column_list = ['user_id', 'favorite_count', 'num_hashtags', 'text',
-                   'source', 'num_mentions']
+                   'source', 'num_mentions', 'timestamp', 'geo', 'place',
+                   'retweet_count', 'reply_count']
     df = extract_columns_from_multiple_csvs(column_list,
                                             human_tweets+fake_tweets)
+    df.to_csv('data/training_tweets.csv')
