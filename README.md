@@ -76,7 +76,22 @@ The backbone of this app is made in python, whose modules are as follows:
     - The objective of this model is to create a dictionary which has the
       twitter user's user_id and the prediction on whether they are
       a fake account or otherwise
-7. information_gain_ratio.py
+7. load_mongo_tweet_data.py
+    - The objective of this model is to get the prediction dictionary from
+      the prediction model script, get all the tweets from the mongo db,
+      and then create a csv file which labels the tweets as fake or not.
+      One critical part of this is that it currently requires two passes
+      in terms of downloading tweet data:
+      a) get topic related tweets
+      b) from the users in step a, get 40 tweets from their timeline
+      (future plan)
+      c) classify the users
+      d) label the tweets
+
+      A strong predictor that is more "lightweight" will be built during the
+      course of this project in order to be able to SKIP step b so as to
+      make things much faster for users
+8. information_gain_ratio.py
     - These are a series of helper functions to compute for the information
       gain ratio of continuous variables using Ross Quinlan's approach as
       appled in the decision tree C4.5, to be used in strengthening a
@@ -84,7 +99,7 @@ The backbone of this app is made in python, whose modules are as follows:
       in feature selection by determining the information one can gain from
       different features, and to be used in computing for word importance in
       determine how a word can tell which topic a document falls in
-8. tweet_text_processor.py
+9. tweet_text_processor.py
     - These are a series of functions that do the following things:
       a) Tokenize Tweets in a Twitter specific way (convert links into "url"),
          remove usernames, remove hashtags, correct the spelling of words
