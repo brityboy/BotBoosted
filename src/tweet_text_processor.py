@@ -412,7 +412,7 @@ def get_most_importance_sentences_per_topic(tfidf, matrix, topic_label):
     pass
 
 
-def get_intra_topic_similarity_in_w_matrix(W):
+def get_intra_topic_similarity_in_w_matrix(W, metric):
     '''
     INPUT
          - W matrix from NMF
@@ -422,11 +422,35 @@ def get_intra_topic_similarity_in_w_matrix(W):
     Returns the average intra-topic similarity using jensen shannon divergence
     of a W matrix
     '''
-    W = W/np.sum(W, axis=1).reshape(-1, 1)
+    # W = W/np.sum(W, axis=1).reshape(-1, 1)
     topic_labels = np.argmax(W, axis=1)
     unique_topics = np.unique(topic_labels)
     for unique_topic in unique_topics:
-        np.tril(pairwise_distances(W[topic_labels == unique_topic], n_jobs-1))
+        subset = W[topic_labels == unique_topic]
+        total = np.sum(np.tril(pairwise_distances(subset,
+                                                  metric=metric,
+                                                  n_jobs=-1)))
+        average = total/float(ncr(subset.shape[1], 2))
+        print average
+
+
+def check_runtime(n_topics, metric):
+    '''
+    INPUT
+         - n_topics
+         - metric
+    OUTPUT
+         - prints out the content and the time for n_topics taken from
+         a W matrix extracted via NMF and a distance metrics for pairwise
+         computations
+
+    Returns none
+    '''
+    start = time.time()
+    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, n_topics)
+    get_intra_topic_similarity_in_w_matrix(W, metric)
+    print "distance computation time: ", time.time() - start
+
 
 
 def jsd(x, y):
@@ -493,6 +517,7 @@ if __name__ == "__main__":
     # with open('data/lda_sample.pkl', 'w+') as f:
     #     pickle.dump(topics, f)
     print('creating the tfidf_matrix')
+    start = time.time()
     tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
     print "tfidf vectorizing: ", time.time() - start
     # print('exploring the nmf topic range')
@@ -501,9 +526,8 @@ if __name__ == "__main__":
     #     topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
     # print "nmf exploration: ", time.time() - start
     # plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
-    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, 5)
-
 
     start = time.time()
-    ncr(1842, 2)
-    print "ncr: ", time.time() - start
+    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, 5)
+    get_intra_topic_similarity_in_w_matrix(W, 'euclidean')
+    print "distance computation time: ", time.time() - start
