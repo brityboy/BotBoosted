@@ -435,7 +435,7 @@ def get_most_importance_tweets_per_topic(tfidf_matrix,
         print('\n')
         print('topic #{}'.format(i+1))
         print(subset_tweet_array[np.argmax(subset_sent_importance)])
-        subset_percent = round(float(nsubtweets/ntweets)*100, 2)
+        subset_percent = round(float(nsubtweets)/ntweets*100, 2)
         print('{} percent of tweets are in this topic'.format(subset_percent))
     pass
 
@@ -532,30 +532,53 @@ def extract_tweets_from_dataframe(df, topic_count):
 
     Return nothing
     '''
-    print('tokenizing tweets')
+    print('tokenizing tweets...')
     documents = [document for document in
                  df.text.values if type(document) == str]
     start = time.time()
     tokenized_tweets = multiprocess_tokenize_tweet(documents)
-    print "multiprocess tokenizing: ", time.time() - start
-    print('creating the tfidf_matrix')
+    print "tokenizing the tweets took: ", time.time() - start
+    print('creating the tfidf_matrix...')
     start = time.time()
     tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
-    print "tfidf vectorizing: ", time.time() - start
+    print "vectorizing took: ", time.time() - start
+    print('extracting {} topics...'.format(topic_count))
     start = time.time()
     W, H, nmf, topic_label = fit_nmf(tfidf_matrix, topic_count)
-    print "extracting topics: ", time.time() - start
+    print "extracted {} topics: ".format(topic_count), time.time() - start
+    print('fetching important tweets...')
     start = time.time()
     get_most_importance_tweets_per_topic(tfidf_matrix,
                                          topic_label, df)
-    print "extracting important tweets: ", time.time() - start
+    print "fetching took: ", time.time() - start
+
+
+def process_real_and_fake_tweets(df):
+    '''
+    INPUT
+         - dataframe
+    OUTPUT
+         - prints out the top tweets for an arbitrary topic number
+           tentatively set to half a percent of the sample size
+
+    Returns none
+    '''
+    print('we are going to process {} tweets'.format(df.shape[0]))
+    fakedf = df.query('pred == 1')
+    realdf = df.query('pred == 0')
+    print('there are {} fake tweets in this query'.format(fakedf.shape[0]))
+    print('there are {} real tweets in this query'.format(realdf.shape[0]))
+    faketopics = int(fakedf.shape[0]*.005)
+    realtopics = int(realdf.shape[0]*.005)
+    extract_tweets_from_dataframe(fakedf,
+                                  20 if faketopics > 20 else faketopics)
+    extract_tweets_from_dataframe(realdf,
+                                  20 if realtopics > 20 else realtopics)
+
 
 if __name__ == "__main__":
     df = pd.read_csv('data/trumptweets.csv')
-    fakedf = df.query('pred == 1')
-    extract_tweets_from_dataframe(fakedf, 5)
-    realdf = df.query('pred == 0')
-    extract_tweets_from_dataframe(realdf, 5)
+    process_real_and_fake_tweets(df)
     # print('exploring the nmf topic range')
     # start = time.time()
     # max_topic_count, dist_list, \
