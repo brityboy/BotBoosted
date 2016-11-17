@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from classification_model import *
+from process_loaded_data import *
 
 
 def load_all_training_data():
@@ -93,7 +94,7 @@ def load_master_training_df():
     statuses count - number of tweets posted
     friends_count - number of accounts the user is following
     name - user specified user name
-    lang - user specified user language
+    lang - user specified user language (CANNOT BE USED)
     favourites_count - number of items favourited
     url - user specified url
     created_at - date the account was created
@@ -124,14 +125,42 @@ def load_master_training_df():
     # df['type_created_at'] = df.created_at.apply(type)
     return df
 
-if __name__ == "__main__":
-    df = load_master_training_df()
+
+def feature_engineering(df):
+    '''
+    INPUT
+         - df - initial pandas dataframe
+    OUTPUT
+         - processed dataframe
+    Returns - features needed for the model
+    '''
     df = df[['profile_use_background_image', 'geo_enabled', 'verified',
              'followers_count', 'default_profile_image', 'listed_count',
              'statuses_count', 'friends_count', 'favourites_count',
              'favorite_count', 'num_hashtags', 'num_mentions',
              'retweet_count', 'label_y']]
+    df = check_if_many_relative_followers_to_friends(df)
+    df['has_30_followers'] = \
+        df.followers_count.apply(lambda x: 1 if x >= 30 else 0)
+    df['favorited_by_another'] = \
+        df.favorite_count.apply(lambda favcnt: 1 if favcnt > 0 else 0)
+    df['has_hashtagged'] = \
+        df.num_hashtags.apply(lambda hashtag: 1 if hashtag > 0 else 0)
+    df['has_mentions'] = \
+        df.num_mentions.apply(lambda mentions: 1 if mentions > 0 else 0)
     df = df.fillna(-999)
+    return df
+
+
+def run_predictive_model(df):
+    '''
+    INPUT
+         - df ready for processing
+    OUTPUT
+         - a fit model
+
+    Returns a fit model
+    '''
     y = df.pop('label_y')
     y = y.values
     X = df.values
@@ -142,25 +171,30 @@ if __name__ == "__main__":
                                          X_test, y_test)
     weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
     X_train_bw = X_train_b * weights
-    paramgrid = {'n_estimators': [200],
-                 'max_features': ['auto'],
-                 'criterion': ['gini', 'entropy'],
-                 'min_samples_split': [15, 16, 17, 18, 19, 20, 21, 22, 23],
-                 'min_samples_leaf': [5, 6, 7, 8],
-                 'max_depth': [12, 13, 14, 15, 16, 17],
-                 'bootstrap': [True]}
+    # paramgrid = {'n_estimators': [200],
+    #              'max_features': ['auto'],
+    #              'criterion': ['gini', 'entropy'],
+    #              'min_samples_split': [15, 16, 17, 18, 19, 20, 21, 22, 23],
+    #              'min_samples_leaf': [5, 6, 7, 8],
+    #              'max_depth': [12, 13, 14, 15, 16, 17],
+    #              'bootstrap': [True]}
     model = RandomForestClassifier(n_jobs=-1)
-    # model = evaluate_model(model, X_train_bw, y_train_b)
-    model, gridsearch = gridsearch(paramgrid, model, X_train_bw, y_train_b)
+    model = evaluate_model(model, X_train_bw, y_train_b)
+    # model, gridsearch = gridsearch(paramgrid, model, X_train_bw, y_train_b)
     print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train_b, y_train_b)
-    confusion_matrix(y_train_b, model.predict(X_train_b))
+    print(confusion_matrix(y_train_b, model.predict(X_train_b)))
     print("this is the model performance on the test data\n")
     view_classification_report(model, X_test_b, y_test_b)
-    confusion_matrix(y_test_b, model.predict(X_test_b))
+    print(confusion_matrix(y_test_b, model.predict(X_test_b)))
     print("this is the model performance on different split ratios\n")
     etcb = Eval(model, .05, .5, .05, 10)
     etcb.evaluate_data(X_test_b, y_test_b)
     etcb.plot_performance()
     print("\nthese are the model feature importances\n")
     view_feature_importances(df, model)
+    return model
+
+if __name__ == "__main__":
+    df = load_master_training_df()
+    # df = feature_engineering(df)
