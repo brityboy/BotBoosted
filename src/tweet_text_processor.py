@@ -20,6 +20,7 @@ import multiprocessing as mp
 import threading
 import time
 from scipy.spatial.distance import cosine
+import warnings
 
 def fix_the_sequence_of_repeated_characters(word):
     '''
@@ -410,27 +411,27 @@ def get_most_importance_sentences_per_topic(tfidf, matrix, topic_label):
     pass
 
 
-def multi_js(p, q):
+def jsd(x, y):  #Jensen-shannon divergence
     '''
     INPUT
-         - p: np array distribution
-         - q: np array distribution
+         - x: np array distribution
+         - y: np array distribution
     OUTPUT
          - float
     Returns the JS Divergence
-    This is the Jensen-Shannon divergence (symmetric) between two multinomials,
-    expressed in nats, taken from http://www.cs.cmu.edu/~chanwook/MySoftware/
-    rm1_Spk-by-Spk_MLLR/rm1_PNCC_MLLR_1/rm1/python/sphinx/divergence.py
+    taken from # @author: jonathanfriedman
+    as seen on http://stats.stackexchange.com/questions/29578/jensen-shannon\
+    -divergence-calculation-for-3-prob-distributions-is-this-ok
     '''
-    if (len(q.shape) == 2):
-        axis = 1
-    else:
-        axis = 0
-    # D_{JS}(P\|Q) = (D_{KL}(P\|Q) + D_{KL}(Q\|P)) / 2
-    return 0.5 * ((q * (np.log(q.clip(1e-10, 1))
-                        - np.log(p.clip(1e-10, 1)))).sum(axis)
-                        + (p * (numpy.log(p.clip(1e-10, 1))
-                        - np.log(q.clip(1e-10, 1)))).sum(axis))
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    x = np.array(x)
+    y = np.array(y)
+    d1 = x*np.log2(2*x/(x+y))
+    d2 = y*np.log2(2*y/(x+y))
+    d1[np.isnan(d1)] = 0
+    d2[np.isnan(d2)] = 0
+    d = 0.5*np.sum(d1+d2)
+    return d
 
 
 if __name__ == "__main__":
