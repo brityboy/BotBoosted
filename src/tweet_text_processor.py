@@ -168,7 +168,7 @@ def tfidf_vectorizer(documents):
 
     Processes the documents corpus using a tfidf vectorizer
     '''
-    tfidf = TfidfVectorizer(stop_words='english')
+    tfidf = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
     tfidf_matrix = tfidf.fit_transform(documents)
     return tfidf, tfidf_matrix
 
@@ -421,16 +421,22 @@ def get_most_importance_tweets_per_topic(tfidf_matrix,
     of the words in the sentence
     '''
     topic_label = np.array(topic_label)
+    ntweets = topic_label.shape[0]
     tfidfsum = np.sum(tfidf_matrix, axis=1)
     wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
                                     arr=tfidf_matrix.todense())
     avg_sent_imp = tfidfsum/wordcount.reshape(-1, 1)
-    avg_sent_imp = np.asarray(avg_word_importance).flatten()
+    avg_sent_imp = np.asarray(avg_sent_imp).flatten()
     tweetarray = df.text.values
     for i, unique_topic in enumerate(np.unique(topic_label)):
         subset_tweet_array = tweetarray[topic_label == unique_topic]
         subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
-        print i, subset_tweet_array[np.argmax(subset_sent_importance)]
+        nsubtweets = subset_sent_importance.shape[0]
+        print('\n')
+        print('topic #{}'.format(i))
+        print(subset_tweet_array[np.argmax(subset_sent_importance)])
+        subset_percent = round(float(nsubtweets/ntweets)*100, 2)
+        print('{} percent of tweets are in this topic'.format(subset_percent))
     pass
 
 
@@ -516,38 +522,44 @@ def ncr(n, r):
     return numer//denom
 
 
-if __name__ == "__main__":
-    df = pd.read_csv('data/trumptweets.csv')
+def extract_tweets_from_dataframe(df, topic_count):
+    '''
+    INPUT
+         - df - dataframe
+         - topic_count - int, number of topics to extract
+    OUTPUT
+         - prints the top tweets from a dataframe given the topic-count
+
+    Return nothing
+    '''
     print('tokenizing tweets')
     documents = [document for document in
                  df.text.values if type(document) == str]
     start = time.time()
     tokenized_tweets = multiprocess_tokenize_tweet(documents)
     print "multiprocess tokenizing: ", time.time() - start
-    # tokenized_tweets = [tokenize_tweet(document) for document in documents]
-    # text = df.text.values[49723]
-    # text = documents[32]
-    # for i, document in enumerate(documents):
-    #     print(i, tokenize_tweet(document))
-    # s = "TTTCCGACTTTTTGACTTACGAAAAAA"
-    # print(fix_the_sequence_of_repeated_characters(s))
-    # print tw.emoticons.analyze_tweet(':)')
-    # vectorizer, word_counts_matrix = word_count_vectorizer(documents)
-    # topics = fit_LDA(word_counts_matrix, 10)
-    # with open('data/lda_sample.pkl', 'w+') as f:
-    #     pickle.dump(topics, f)
     print('creating the tfidf_matrix')
     start = time.time()
     tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
     print "tfidf vectorizing: ", time.time() - start
+    start = time.time()
+    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, topic_count)
+    print "extracting topics: ", time.time() - start
+    start = time.time()
+    get_most_importance_tweets_per_topic(tfidf_matrix,
+                                         topic_label, df)
+    print "extracting important tweets: ", time.time() - start
+
+if __name__ == "__main__":
+    df = pd.read_csv('data/trumptweets.csv')
+    fakedf = df.query('pred == 1')
+    extract_tweets_from_dataframe(fakedf, 5)
+    realdf = df.query('pred == 0')
+    extract_tweets_from_dataframe(realdf, 5)
     # print('exploring the nmf topic range')
     # start = time.time()
     # max_topic_count, dist_list, \
     #     topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
     # print "nmf exploration: ", time.time() - start
     # plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
-
-    start = time.time()
-    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, 5)
-    get_intra_topic_similarity_in_w_matrix(W, 'euclidean')
-    print "distance computation time: ", time.time() - start
+    # get_intra_topic_similarity_in_w_matrix(W, 'euclidean')
