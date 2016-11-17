@@ -1,25 +1,25 @@
-from __future__ import division
+# from __future__ import division
 import numpy as np
 import pandas as pd
 import twokenize as tw
 import re
 import string
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.decomposition import LatentDirichletAllocation
+# from sklearn.decomposition import LatentDirichletAllocation
 from collections import Counter
-from itertools import combinations
-from dit.divergences import jensen_shannon_divergence
-import dit
+# from itertools import combinations
+# from dit.divergences import jensen_shannon_divergence
+# import dit
 from dill import pickle
 from sklearn.decomposition import NMF
-from sklearn.metrics.pairwise import cosine_similarity, pairwise_distances
+# from sklearn.metrics.pairwise import cosine_similarity, pairwise_distances
 import matplotlib.pyplot as plt
-from information_gain_ratio import *
+# from information_gain_ratio import *
 from unidecode import unidecode
 import multiprocessing as mp
 import threading
 import time
-from scipy.spatial.distance import cosine
+# from scipy.spatial.distance import cosine
 import warnings
 import operator as op
 
@@ -433,7 +433,7 @@ def get_most_importance_tweets_per_topic(tfidf_matrix,
         subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
         nsubtweets = subset_sent_importance.shape[0]
         print('\n')
-        print('topic #{}'.format(i))
+        print('topic #{}'.format(i+1))
         print(subset_tweet_array[np.argmax(subset_sent_importance)])
         subset_percent = round(float(nsubtweets/ntweets)*100, 2)
         print('{} percent of tweets are in this topic'.format(subset_percent))
