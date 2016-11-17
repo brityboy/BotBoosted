@@ -392,6 +392,23 @@ def tuple_igr_computation(info_tuple):
         return attribute
 
 
+def remove_nan_tweets_from_df(df):
+    '''
+    INPUT
+         - df: pandas df with tweets in the text column
+    OUTPUT
+         - pandas df
+
+    Returns a dataframe where text rows that are not string are removed
+    '''
+    df['istext'] = df.text.apply(lambda x: 1 if type(x) == str else 0)
+    df = df.query('istext == 1')
+    return df
+
+
+def get_most_importance_sentences_per_topic(tfidf, matrix, topic_label):
+
+
 if __name__ == "__main__":
     df = pd.read_csv('data/trumptweets.csv')
     print('tokenizing tweets')
