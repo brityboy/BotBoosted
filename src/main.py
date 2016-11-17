@@ -6,6 +6,7 @@ from tweet_text_processor import *
 
 
 if __name__ == "__main__":
+    totalstart = time.time()
     print('loading model...')
     start = time.time()
     model = load_pickled_model('models/voting_ensemble_model.pkl')
@@ -21,6 +22,7 @@ if __name__ == "__main__":
                                               'clintonmillion_pred')
     pred_dict = load_pred_dict_from_pickle('data/clintonmillion_pred_dict.pkl')
     print("making predictions took: ", time.time() - start)
+    del model
     print('loading tweets...')
     start = time.time()
     df = get_tweets('clintonmillion', 'topictweets', pred_dict)
@@ -28,4 +30,8 @@ if __name__ == "__main__":
     df_classified_users['pred'] = \
         df_classified_users.id.apply(lambda _id: pred_dict[_id])
     print("loading tweets took: ", time.time() - start)
+    del pred_dict
+    del df
     process_real_and_fake_tweets(df_classified_users)
+    print('\n')
+    print("entire thing took: ", time.time() - totalstart)
