@@ -12,7 +12,7 @@ from dit.divergences import jensen_shannon_divergence
 import dit
 from dill import pickle
 from sklearn.decomposition import NMF
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity, pairwise_distances
 import matplotlib.pyplot as plt
 from information_gain_ratio import *
 from unidecode import unidecode
@@ -21,6 +21,7 @@ import threading
 import time
 from scipy.spatial.distance import cosine
 import warnings
+import operator as op
 
 def fix_the_sequence_of_repeated_characters(word):
     '''
@@ -411,7 +412,24 @@ def get_most_importance_sentences_per_topic(tfidf, matrix, topic_label):
     pass
 
 
-def jsd(x, y):  #Jensen-shannon divergence
+def get_intra_topic_similarity_in_w_matrix(W):
+    '''
+    INPUT
+         - W matrix from NMF
+    OUTPUT
+         - float: average jensen shannon divergence within topics
+
+    Returns the average intra-topic similarity using jensen shannon divergence
+    of a W matrix
+    '''
+    W = W/np.sum(W, axis=1).reshape(-1, 1)
+    topic_labels = np.argmax(W, axis=1)
+    unique_topics = np.unique(topic_labels)
+    for unique_topic in unique_topics:
+        np.tril(pairwise_distances(W[topic_labels == unique_topic], n_jobs-1))
+
+
+def jsd(x, y):
     '''
     INPUT
          - x: np array distribution
@@ -432,6 +450,26 @@ def jsd(x, y):  #Jensen-shannon divergence
     d2[np.isnan(d2)] = 0
     d = 0.5*np.sum(d1+d2)
     return d
+
+
+def ncr(n, r):
+    '''
+    INPUT
+         - n, int
+         - r, int
+         (these are for n choose r)
+    OUTPUT
+         - int
+    Returns the computation of combinations n choose r
+    taken from http://stackoverflow.com/questions/4941753/is-\
+    there-a-math-ncr-function-in-python
+    '''
+
+    r = min(r, n-r)
+    if r == 0: return 1
+    numer = reduce(op.mul, xrange(n, n-r, -1))
+    denom = reduce(op.mul, xrange(1, r+1))
+    return numer//denom
 
 
 if __name__ == "__main__":
@@ -455,7 +493,6 @@ if __name__ == "__main__":
     # with open('data/lda_sample.pkl', 'w+') as f:
     #     pickle.dump(topics, f)
     print('creating the tfidf_matrix')
-    start = time.time()
     tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
     print "tfidf vectorizing: ", time.time() - start
     # print('exploring the nmf topic range')
@@ -464,4 +501,9 @@ if __name__ == "__main__":
     #     topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
     # print "nmf exploration: ", time.time() - start
     # plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
-    # W, H, nmf, topic_label = fit_nmf(tfidf_matrix, 17)
+    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, 5)
+
+
+    start = time.time()
+    ncr(1842, 2)
+    print "ncr: ", time.time() - start
