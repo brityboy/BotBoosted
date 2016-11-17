@@ -407,6 +407,30 @@ def remove_nan_tweets_from_df(df):
 
 
 def get_most_importance_sentences_per_topic(tfidf, matrix, topic_label):
+    pass
+
+
+def multi_js(p, q):
+    '''
+    INPUT
+         - p: np array distribution
+         - q: np array distribution
+    OUTPUT
+         - float
+    Returns the JS Divergence
+    This is the Jensen-Shannon divergence (symmetric) between two multinomials,
+    expressed in nats, taken from http://www.cs.cmu.edu/~chanwook/MySoftware/
+    rm1_Spk-by-Spk_MLLR/rm1_PNCC_MLLR_1/rm1/python/sphinx/divergence.py
+    '''
+    if (len(q.shape) == 2):
+        axis = 1
+    else:
+        axis = 0
+    # D_{JS}(P\|Q) = (D_{KL}(P\|Q) + D_{KL}(Q\|P)) / 2
+    return 0.5 * ((q * (np.log(q.clip(1e-10, 1))
+                        - np.log(p.clip(1e-10, 1)))).sum(axis)
+                        + (p * (numpy.log(p.clip(1e-10, 1))
+                        - np.log(q.clip(1e-10, 1)))).sum(axis))
 
 
 if __name__ == "__main__":
@@ -439,4 +463,4 @@ if __name__ == "__main__":
     #     topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
     # print "nmf exploration: ", time.time() - start
     # plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
-    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, 17)
+    # W, H, nmf, topic_label = fit_nmf(tfidf_matrix, 17)
