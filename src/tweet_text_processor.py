@@ -408,7 +408,29 @@ def remove_nan_tweets_from_df(df):
     return df
 
 
-def get_most_importance_sentences_per_topic(tfidf, matrix, topic_label):
+def get_most_importance_tweets_per_topic(tfidf_matrix,
+                                         topic_label, df):
+    '''
+    INPUT
+         - tfidf_matrix: this is the tfidf matrix
+         - topic_label: this is a list that has the topic label for each doc
+         - df: this dataframe has all the tweets
+    OUTPUT
+
+    Returns the most important tweets per topic by getting the average tfidf
+    of the words in the sentence
+    '''
+    topic_label = np.array(topic_label)
+    tfidfsum = np.sum(tfidf_matrix, axis=1)
+    wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
+                                    arr=tfidf_matrix.todense())
+    avg_sent_imp = tfidfsum/wordcount.reshape(-1, 1)
+    avg_sent_imp = np.asarray(avg_word_importance).flatten()
+    tweetarray = df.text.values
+    for i, unique_topic in enumerate(np.unique(topic_label)):
+        subset_tweet_array = tweetarray[topic_label == unique_topic]
+        subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
+        print i, subset_tweet_array[np.argmax(subset_sent_importance)]
     pass
 
 
@@ -452,7 +474,6 @@ def check_runtime(n_topics, metric):
     print "distance computation time: ", time.time() - start
 
 
-
 def jsd(x, y):
     '''
     INPUT
@@ -488,7 +509,6 @@ def ncr(n, r):
     taken from http://stackoverflow.com/questions/4941753/is-\
     there-a-math-ncr-function-in-python
     '''
-
     r = min(r, n-r)
     if r == 0: return 1
     numer = reduce(op.mul, xrange(n, n-r, -1))
