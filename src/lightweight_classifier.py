@@ -213,7 +213,7 @@ def run_predictive_model(df):
                                            X_train, y_train)
     X_test_b, y_test_b = balance_classes(RandomUnderSampler(),
                                          X_test, y_test)
-    weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
+    # weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
     weights = 1
     X_train_bw = X_train_b * weights
     # paramgrid = {'n_estimators': [200],
