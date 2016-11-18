@@ -110,12 +110,12 @@ def download_tweets_given_search_query(searchQuery):
     auth = tweepy.AppAuthHandler(API_KEY, API_SECRET)
     api = tweepy.API(auth, wait_on_rate_limit=True,
                      wait_on_rate_limit_notify=True)
-    maxTweets = 50000  # Some arbitrary large number
+    maxTweets = 15000  # Some arbitrary large number
     tweetsPerQry = 100
-    tweet_list,  = download_tweets_to_list(searchQuery,
-                                           tweetsPerQry,
-                                           maxTweets,
-                                           api)
+    tweet_list = download_tweets_to_list(searchQuery,
+                                         tweetsPerQry,
+                                         maxTweets,
+                                         api)
     return tweet_list
 
 if __name__ == "__main__":
