@@ -1,7 +1,10 @@
 import dill as pickle
-from lightweight_classifier import *
-import pandas as pd
+from lightweight_classifier import convert_created_time_to_datetime
+# import pandas as pd
 import numpy as np
+from tweet_text_processor import split_list
+import multiprocessing as mp
+import time
 
 
 def process_tweet(tweet):
@@ -46,11 +49,31 @@ def process_tweet(tweet):
                      favorited_by_another, has_hashtagged, has_mentions])
 
 
+def multiprocess_process_tweet(tweet_list):
+    '''
+    INPUT
+         - tweet_list: this is a list of the documents to be tweet tokenized
+    OUTPUT
+         - list
+
+    Return a list of processed tweets done with multiprocessing
+    '''
+    n_processes = mp.cpu_count()
+    p = mp.Pool(n_processes)
+    split_docs = np.array(split_list(tweet_list, n_processes))
+    processed_tweets = p.map(process_tweet, split_docs)
+    return [item for row in processed_tweets for item in row]
+
 if __name__ == "__main__":
-    df = pd.read_csv('data/training_user_tweet_data.csv')
-    with open('data/test_tweet_scrape.pkl', 'r') as f:
+    # df = pd.read_csv('data/training_user_tweet_data.csv')
+    start = time.time()
+    with open('data/test_tweet_scrape.pkl', 'r+') as f:
         tweet_list = pickle.load(f)
-    tweet = tweet_list[0]
-    tweetarray = process_tweet(tweet)
-    print(tweetarray)
-    tweets_for_prediction = [process_tweet(tweet) for tweet in tweet_list]
+    print("load pkl file: ", time.time() - start)
+    # tweet = tweet_list[0]
+    # tweetarray = process_tweet(tweet)
+    # print(tweetarray)
+    start = time.time()
+    # tweets_for_prediction = multiprocess_process_tweet(tweet_list)
+    processed_tweets = [process_tweet(tweet) for tweet in tweet_list]
+    print("multiprocess tweets: ", time.time() - start)
