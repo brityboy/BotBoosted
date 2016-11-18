@@ -1,8 +1,13 @@
 import time
 import dill as pickle
-from prediction_model import *
-from load_mongo_tweet_data import *
-from tweet_text_processor import *
+from prediction_model import load_pickled_model
+from prediction_model import load_processed_csv_for_predictions
+from prediction_model import create_dictionary_with_id_and_predictions
+from load_mongo_tweet_data import load_pred_dict_from_pickle, get_tweets
+from tweet_text_processor import process_real_and_fake_tweets
+from tweet_scraper import download_tweets_given_search_query
+from tweet_scrape_processor import process_tweet
+from lightweight_predictor import make_lightweight_predictions
 
 
 def demonstration_on_loaded_data_using_original_model():
@@ -38,7 +43,7 @@ def demonstration_on_loaded_data_using_original_model():
     df_classified_users['pred'] = \
         df_classified_users.id.apply(lambda _id: pred_dict[_id])
     print("loading tweets took: ", time.time() - start)
-    del pred_dict
+    # del pred_dict
     del df
     process_real_and_fake_tweets(df_classified_users)
     print('\n')
@@ -56,36 +61,22 @@ def botboosted(searchQuery):
     totalstart = time.time()
     print('loading model...')
     start = time.time()
-    history_model = load_pickled_model('models/account_history_rf.pkl')
-    behavior_model = load_pickled_model('models/behavior_rate_rf.pkl')
-    ensemble_model = load_pickled_model('models/ensemble_rf.pkl')
+    history_model = load_pickled_model('models/account_history_rf_model.pkl')
+    behavior_model = load_pickled_model('models/behavior_rate_rf_model.pkl')
+    ensemble_model = load_pickled_model('models/ensemble_rf_model.pkl')
     print("loading model took: ", time.time() - start)
     print('getting and processing tweets...')
     start = time.time()
     tweet_list = download_tweets_given_search_query(searchQuery)
-    # user_id_array, X = \
-    #     load_processed_csv_for_predictions('data/clintonmillion.csv')
-    print("loading data took: ", time.time() - start)
+    print("loading and processing tweet data took: ", time.time() - start)
     print('making predictions...')
     start = time.time()
-    create_dictionary_with_id_and_predictions(model, user_id_array, X,
-                                              'clintonmillion_pred')
-    pred_dict = load_pred_dict_from_pickle('data/clintonmillion_pred_dict.pkl')
+    predicted_tweets = make_lightweight_predictions(tweet_list)
     print("making predictions took: ", time.time() - start)
-    del model
-    print('loading tweets...')
-    start = time.time()
-    df = get_tweets('clintonmillion', 'topictweets', pred_dict)
-    df_classified_users = df[df.id.isin(pred_dict)]
-    df_classified_users['pred'] = \
-        df_classified_users.id.apply(lambda _id: pred_dict[_id])
-    print("loading tweets took: ", time.time() - start)
-    del pred_dict
-    del df
-    process_real_and_fake_tweets(df_classified_users)
+    process_real_and_fake_tweets(predicted_tweets)
     print('\n')
     print("entire thing took: ", time.time() - totalstart)
 
 
 if __name__ == "__main__":
-    botboosted('marcos burial')
+    botboosted('hillary clinton')
