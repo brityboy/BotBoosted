@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from classification_model import *
 from process_loaded_data import *
+from datetime import datetime
 
 
 def load_all_training_data():
@@ -121,9 +122,38 @@ def load_master_training_df():
              'reply_count',
              'file'], axis=1, inplace=True)
     df.updated = pd.to_datetime(df.updated)
-    # df.created_at = pd.to_datetime(df.created_at)
-    # df['type_created_at'] = df.created_at.apply(type)
+    df.created_at = df.created_at.apply(convert_created_time_to_datetime)
+    account_age = df.timestamp - df.created_at
+    account_age = map(get_account_age_in_days, account_age.values)
+    df['account_age'] = account_age
     return df
+
+
+def get_account_age_in_days(numpy_time_difference):
+    '''
+    INPUT
+         - numpy_time_difference: a numpy timedelta object + 1
+    OUTPUT
+         - int
+    Returns
+    '''
+    return int(numpy_time_difference/1000000000/60/60/24)+1
+
+
+def convert_created_time_to_datetime(datestring):
+    '''
+    INPUT
+         - datestring: a string object either as a date or
+         a unix timestamp
+    OUTPUT
+         - a datetime object
+
+    Returns a pandas datetime object
+    '''
+    if len(datestring) == 30:
+        return pd.to_datetime(datestring)
+    else:
+        return pd.to_datetime(datetime.fromtimestamp(int(datestring[:10])))
 
 
 def feature_engineering(df):
@@ -138,7 +168,7 @@ def feature_engineering(df):
              'followers_count', 'default_profile_image', 'listed_count',
              'statuses_count', 'friends_count', 'favourites_count',
              'favorite_count', 'num_hashtags', 'num_mentions',
-             'retweet_count', 'label_y']]
+             'account_age', 'retweet_count', 'label_y']]
     df = check_if_many_relative_followers_to_friends(df)
     df['has_30_followers'] = \
         df.followers_count.apply(lambda x: 1 if x >= 30 else 0)
@@ -197,4 +227,4 @@ def run_predictive_model(df):
 
 if __name__ == "__main__":
     df = load_master_training_df()
-    # df = feature_engineering(df)
+    df = feature_engineering(df)
