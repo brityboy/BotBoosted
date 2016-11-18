@@ -28,7 +28,8 @@ def check_if_categorical(attribute, df):
     check_if_categorical = np.vectorize(is_categorical)
     if np.mean(check_if_categorical(df[attribute].values)) == 1:
         return True
-    return False
+    else:
+        return False
 
 
 def entropy(y):
@@ -459,6 +460,24 @@ def information_gain_ratio_continuous(attribute, df, y):
     ig = multiple_information_gain(y, y_list, entropy)
     pig = potential_attribute_information_gain_continuous(X_list)
     return ig/pig
+
+
+def information_gain_ratio(attribute, df, y):
+    '''
+    INPUT
+         - attribute: str, feature to check
+         - df: pandas dataframe of features
+         - y: 1d array, target
+    OUTPUT
+         - float
+    Returns the information gain ratio accdg to Quinlan's C4.5, and checks
+    if the feature is continuous or categorical so as to appropriately
+    compute for the information gain ratio
+    '''
+    if check_if_categorical(attribute, df):
+        return information_gain_ratio_categorical(attribute, df, y)
+    else:
+        return information_gain_ratio_continuous(attribute, df, y)
 
 
 def load_play_golf():
