@@ -164,11 +164,11 @@ def feature_engineering(df):
          - processed dataframe
     Returns - features needed for the model
     '''
-    df = df[['profile_use_background_image', 'geo_enabled', 'verified',
-             'followers_count', 'default_profile_image', 'listed_count',
-             'statuses_count', 'friends_count', 'favourites_count',
-             'favorite_count', 'num_hashtags', 'num_mentions',
-             'account_age', 'retweet_count', 'label_y']]
+    # df = df[['profile_use_background_image', 'geo_enabled', 'verified',
+    #          'followers_count', 'default_profile_image', 'listed_count',
+    #          'statuses_count', 'friends_count', 'favourites_count',
+    #          'favorite_count', 'num_hashtags', 'num_mentions',
+    #          'account_age', 'retweet_count', 'label_y']]
     df = check_if_many_relative_followers_to_friends(df)
     df['has_30_followers'] = \
         df.followers_count.apply(lambda x: 1 if x >= 30 else 0)
@@ -179,6 +179,20 @@ def feature_engineering(df):
     df['has_mentions'] = \
         df.num_mentions.apply(lambda mentions: 1 if mentions > 0 else 0)
     df = df.fillna(-999)
+    return df
+
+
+def drop_unnecessary_features(df):
+    '''
+    INPUT
+         - df - initial pandas dataframe
+    OUTPUT
+         - processed dataframe
+    Returns - a dataframe where the unnecessary features have been dropped
+    '''
+    df.drop(['updated', 'description', 'location', 'name', 'lang', 'url',
+             'user_id', 'text', 'source', 'timestamp', 'created_at', 'geo',
+             'place'], axis=1, inplace=True)
     return df
 
 
@@ -200,6 +214,7 @@ def run_predictive_model(df):
     X_test_b, y_test_b = balance_classes(RandomUnderSampler(),
                                          X_test, y_test)
     weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
+    weights = 1
     X_train_bw = X_train_b * weights
     # paramgrid = {'n_estimators': [200],
     #              'max_features': ['auto'],
@@ -208,8 +223,8 @@ def run_predictive_model(df):
     #              'min_samples_leaf': [5, 6, 7, 8],
     #              'max_depth': [12, 13, 14, 15, 16, 17],
     #              'bootstrap': [True]}
-    model = RandomForestClassifier(n_jobs=-1, n_estimators=500)
-    # model = GaussianNB()
+    # model = RandomForestClassifier(n_jobs=-1, n_estimators=500)
+    model = GaussianNB()
     # model = SVC()
     model = evaluate_model(model, X_train_bw, y_train_b)
     # model, gridsearch = gridsearch(paramgrid, model, X_train_bw, y_train_b)
@@ -220,15 +235,113 @@ def run_predictive_model(df):
     view_classification_report(model, X_test_b*weights, y_test_b)
     print(confusion_matrix(y_test_b, model.predict(X_test_b*weights)))
     print("this is the model performance on different split ratios\n")
-    etcb = Eval(model, .05, .5, .05, 100)
-    etcb.evaluate_data(X_test_b*weights, y_test_b)
-    etcb.plot_performance()
+    # etcb = Eval(model, .05, .5, .05, 100)
+    # etcb.evaluate_data(X_test_b*weights, y_test_b)
+    # etcb.plot_performance()
     print("\nthese are the model feature importances\n")
     view_feature_importances(df, model)
     return model
 
 if __name__ == "__main__":
-    df = load_master_training_df()
-    df = feature_engineering(df)
-    model = run_predictive_model(df)
-    # write_model_to_pkl(model, 'lightweight_vanilla_rf')
+    # df = load_master_training_df()
+    # df = feature_engineering(df)
+    # df = drop_unnecessary_features(df)
+    # df.to_csv('data/training_user_tweet_data.csv', index=None)
+    df = pd.read_csv('data/training_user_tweet_data.csv')
+    print('this is the portion that checks absolute user behavior values')
+    # model = run_predictive_model(df)
+    y = df.pop('label_y')
+    y = y.values
+    X = df.values
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
+    X_train_b, y_train_b = balance_classes(RandomUnderSampler(),
+                                           X_train, y_train)
+    X_test_b, y_test_b = balance_classes(RandomUnderSampler(),
+                                         X_test, y_test)
+    # weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
+    weights = 1
+    X_train_bw = X_train_b * weights
+    paramgrid = {'n_estimators': [200],
+                 'max_features': ['auto'],
+                 'criterion': ['entropy'],
+                 'min_samples_split': [8],
+                 'min_samples_leaf': [3],
+                 'max_depth': [30],
+                 'bootstrap': [True]}
+    model = RandomForestClassifier(n_jobs=-1)
+    # model = GaussianNB()
+    # model = SVC()
+    # model = evaluate_model(model, X_train_bw, y_train_b)
+    model, gs = gridsearch(paramgrid, model, X_train_bw, y_train_b)
+    print("\nthis is the model performance on the training data\n")
+    view_classification_report(model, X_train_bw, y_train_b)
+    print(confusion_matrix(y_train_b, model.predict(X_train_bw)))
+    print("this is the model performance on the test data\n")
+    view_classification_report(model, X_test_b*weights, y_test_b)
+    print(confusion_matrix(y_test_b, model.predict(X_test_b*weights)))
+    print("this is the model performance on different split ratios\n")
+    # etcb = Eval(model, .05, .5, .05, 100)
+    # etcb.evaluate_data(X_test_b*weights, y_test_b)
+    # etcb.plot_performance()
+    print("\nthese are the model feature importances\n")
+    view_feature_importances(df, model)
+    y_pred = model.predict_proba(X_train_bw)[:, 1]
+    print('this is the portion that checks user behavior rate values')
+    X_train_bwr = X_train_bw/X_train_bw[:, 13].reshape(-1, 1)
+    # weights_br = get_igr_attribute_weights(X_train_bwr, y_train_b, df)
+    weights = 1
+    X_train_bwr = X_train_bwr * weights
+    paramgrid = {'n_estimators': [200],
+                 'max_features': ['auto'],
+                 'criterion': ['entropy'],
+                 'min_samples_split': [2],
+                 'min_samples_leaf': [3],
+                 'max_depth': [20],
+                 'bootstrap': [True]}
+    modelb = RandomForestClassifier(n_jobs=-1)
+    # # model = GaussianNB()
+    # # model = SVC()
+    # modelb = evaluate_model(modelb, X_train_bwr, y_train_b)
+    modelb, gs = gridsearch(paramgrid, modelb, X_train_bwr, y_train_b)
+    print("\nthis is the model performance on the training data\n")
+    view_classification_report(modelb, X_train_bwr, y_train_b)
+    print(confusion_matrix(y_train_b, modelb.predict(X_train_bwr)))
+    print("this is the model performance on the test data\n")
+    view_classification_report(modelb,
+                               X_test_b*weights/X_test_b[:,
+                                                         13].reshape(-1,
+                                                                     1),
+                               y_test_b)
+    print(confusion_matrix(y_test_b, modelb.predict(X_test_b*weights)))
+    # print("this is the model performance on different split ratios\n")
+    # # etcb = Eval(model, .05, .5, .05, 100)
+    # # etcb.evaluate_data(X_test_b*weights, y_test_b)
+    # # etcb.plot_performance()
+    print("\nthese are the model feature importances\n")
+    view_feature_importances(df, modelb)
+    y_pred_b = modelb.predict_proba(X_train_bwr)[:, 1]
+    print('this is the portion that ensembles these two facets')
+    ensemble_X = np.hstack((X_train_bw, X_train_bwr,
+                            y_pred.reshape(-1, 1), y_pred_b.reshape(-1, 1)))
+    model_ens = RandomForestClassifier(n_jobs=-1)
+    paramgrid = {'n_estimators': [200],
+                 'max_features': ['auto'],
+                 'criterion': ['gini', 'entropy'],
+                 'min_samples_split': [2, 4, 6, 8, 10],
+                 'min_samples_leaf': [3, 5, 7, 9],
+                 'max_depth': [10, 20, 30, 40, 50],
+                 'bootstrap': [True]}
+    model_ens, gs = gridsearch(paramgrid, model_ens, ensemble_X, y_train_b)
+    # model_ens = evaluate_model(model_ens, ensemble_X, y_train_b)
+    print("\nthis is the model performance on the training data\n")
+    view_classification_report(model_ens, ensemble_X, y_train_b)
+    print(confusion_matrix(y_train_b, model_ens.predict(ensemble_X)))
+    print("this is the model performance on the test data\n")
+    y_pred_test = model.predict_proba(X_test_b)[:, 1]
+    X_test_br = X_test_b/X_test_b[:, 13].reshape(-1, 1)
+    y_pred_test_b = modelb.predict_proba(X_test_br)[:, 1]
+    ensemble_X_test = np.hstack((X_test_b, X_test_br,
+                                 y_pred_test.reshape(-1, 1),
+                                 y_pred_test_b.reshape(-1, 1)))
+    view_classification_report(model_ens, ensemble_X_test, y_test_b)
+    print(confusion_matrix(y_test_b, model_ens.predict(ensemble_X_test)))
