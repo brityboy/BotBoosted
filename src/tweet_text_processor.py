@@ -22,6 +22,7 @@ import time
 # from scipy.spatial.distance import cosine
 import warnings
 import operator as op
+from paretonmf import ParetoNMF
 
 def fix_the_sequence_of_repeated_characters(word):
     '''
@@ -68,6 +69,7 @@ def tokenize_tweet(text):
         if url:
             token_list.append('url')
         elif token[0] == '#':
+            # token_list.append(token[1:])
             pass
         elif time:
             pass
@@ -522,11 +524,41 @@ def ncr(n, r):
     return numer//denom
 
 
-def extract_tweets_from_dataframe(df, topic_count):
+# def extract_tweets_from_dataframe(df, topic_count):
+#     '''
+#     INPUT
+#          - df - dataframe
+#          - topic_count - int, number of topics to extract
+#     OUTPUT
+#          - prints the top tweets from a dataframe given the topic-count
+#
+#     Return nothing
+#     '''
+#     print('tokenizing tweets...')
+#     documents = [document for document in
+#                  df.text.values if type(document) == str]
+#     start = time.time()
+#     tokenized_tweets = multiprocess_tokenize_tweet(documents)
+#     print "tokenizing the tweets took: ", time.time() - start
+#     print('creating the tfidf_matrix...')
+#     start = time.time()
+#     tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
+#     print "vectorizing took: ", time.time() - start
+#     print('extracting {} topics...'.format(topic_count))
+#     start = time.time()
+#     W, H, nmf, topic_label = fit_nmf(tfidf_matrix, topic_count)
+#     print "extracted {} topics: ".format(topic_count), time.time() - start
+#     print('fetching important tweets...')
+#     start = time.time()
+#     get_most_importance_tweets_per_topic(tfidf_matrix,
+#                                          topic_label, df)
+#     print "fetching took: ", time.time() - start
+
+
+def extract_tweets_from_dataframe(df):
     '''
     INPUT
          - df - dataframe
-         - topic_count - int, number of topics to extract
     OUTPUT
          - prints the top tweets from a dataframe given the topic-count
 
@@ -542,10 +574,17 @@ def extract_tweets_from_dataframe(df, topic_count):
     start = time.time()
     tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
     print "vectorizing took: ", time.time() - start
-    print('extracting {} topics...'.format(topic_count))
+    print('extracting topics...')
     start = time.time()
-    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, topic_count)
-    print "extracted {} topics: ".format(topic_count), time.time() - start
+    pnmf = ParetoNMF(pnmf_verbose=True)
+    pnmf.evaluate(tfidf_matrix)
+    W = pnmf.nmf.transform(tfidf_matrix)
+    # H = pnmf.nmf.components_
+    topic_label = np.apply_along_axis(func1d=np.argmax,
+                                      axis=1, arr=W)
+    # W, H, nmf, topic_label = fit_nmf(tfidf_matrix, topic_count)
+    # print "extracted {} topics: ".format(topic_count), time.time() - start
+    print "extracted {} topics: ".format(pnmf.topic_count), time.time() - start
     print('fetching important tweets...')
     start = time.time()
     get_most_importance_tweets_per_topic(tfidf_matrix,
@@ -568,12 +607,15 @@ def process_real_and_fake_tweets(df):
     realdf = df.query('pred == 0')
     print('there are {} fake tweets in this query'.format(fakedf.shape[0]))
     print('there are {} real tweets in this query'.format(realdf.shape[0]))
-    faketopics = int(fakedf.shape[0]*.005)
-    realtopics = int(realdf.shape[0]*.005)
-    extract_tweets_from_dataframe(fakedf,
-                                  20 if faketopics > 20 else faketopics)
-    extract_tweets_from_dataframe(realdf,
-                                  20 if realtopics > 20 else realtopics)
+    # faketopics = int(fakedf.shape[0]*.005)
+    # realtopics = int(realdf.shape[0]*.005)
+    # extract_tweets_from_dataframe(fakedf,
+    #                               20 if faketopics > 20 else faketopics)
+    # extract_tweets_from_dataframe(realdf,
+    #                               20 if realtopics > 20 else realtopics)
+    extract_tweets_from_dataframe(fakedf)
+    extract_tweets_from_dataframe(realdf)
+
 
 
 if __name__ == "__main__":
