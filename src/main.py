@@ -8,6 +8,7 @@ from tweet_text_processor import process_real_and_fake_tweets
 from tweet_scraper import download_tweets_given_search_query
 from tweet_scrape_processor import process_tweet
 from lightweight_predictor import make_lightweight_predictions
+from pymongo import MongoClient
 
 
 def demonstration_on_loaded_data_using_original_model():
@@ -50,6 +51,48 @@ def demonstration_on_loaded_data_using_original_model():
     print("entire thing took: ", time.time() - totalstart)
 
 
+def botboosted_demonstration(searchQuery):
+    '''
+    INPUT
+         - searchQuery - string
+    OUTPUT
+         - entire pipeline
+    Returns none
+    '''
+    client = MongoClient()
+    totalstart = time.time()
+    print('loading model...')
+    start = time.time()
+    history_model = load_pickled_model('models/account_history_rf_model.pkl')
+    behavior_model = load_pickled_model('models/behavior_rate_rf_model.pkl')
+    ensemble_model = load_pickled_model('models/ensemble_rf_model.pkl')
+    print("loading model took: ", time.time() - start)
+    print('getting and processing tweets...')
+    start = time.time()
+    tweet_list = []
+    if searchQuery == 'hillary clinton email':
+        db = client['clintonmillion']
+        tab = db['topictweets'].find()
+        for document in tab:
+            tweet_list.append(document)
+    elif searchQuery == 'donald trump sexual assault':
+        db = client['trumpmillion']
+        tab = db['topictweets'].find()
+        for document in tab:
+            tweet_list.append(document)
+    else:
+        print('that search query is not in the sample datasets')
+        return None
+    print("loading and processing tweet data took: ", time.time() - start)
+    print('making predictions...')
+    start = time.time()
+    predicted_tweets = make_lightweight_predictions(tweet_list)
+    print("making predictions took: ", time.time() - start)
+    process_real_and_fake_tweets(predicted_tweets)
+    print('\n')
+    print("entire thing took: ", time.time() - totalstart)
+
+
 def botboosted(searchQuery):
     '''
     INPUT
@@ -79,4 +122,5 @@ def botboosted(searchQuery):
 
 
 if __name__ == "__main__":
-    botboosted('hillary clinton')
+    # botboosted('hillary clinton')
+    botboosted_demonstration('hillary clinton email')
