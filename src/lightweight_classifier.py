@@ -208,18 +208,20 @@ def run_predictive_model(df):
     #              'min_samples_leaf': [5, 6, 7, 8],
     #              'max_depth': [12, 13, 14, 15, 16, 17],
     #              'bootstrap': [True]}
-    model = RandomForestClassifier(n_jobs=-1)
+    # model = RandomForestClassifier(n_jobs=-1, n_estimators=500)
+    # model = GaussianNB()
+    # model = SVC()
     model = evaluate_model(model, X_train_bw, y_train_b)
     # model, gridsearch = gridsearch(paramgrid, model, X_train_bw, y_train_b)
     print("\nthis is the model performance on the training data\n")
-    view_classification_report(model, X_train_b, y_train_b)
-    print(confusion_matrix(y_train_b, model.predict(X_train_b)))
+    view_classification_report(model, X_train_bw, y_train_b)
+    print(confusion_matrix(y_train_b, model.predict(X_train_bw)))
     print("this is the model performance on the test data\n")
-    view_classification_report(model, X_test_b, y_test_b)
-    print(confusion_matrix(y_test_b, model.predict(X_test_b)))
+    view_classification_report(model, X_test_b*weights, y_test_b)
+    print(confusion_matrix(y_test_b, model.predict(X_test_b*weights)))
     print("this is the model performance on different split ratios\n")
     etcb = Eval(model, .05, .5, .05, 10)
-    etcb.evaluate_data(X_test_b, y_test_b)
+    etcb.evaluate_data(X_test_b*weights, y_test_b)
     etcb.plot_performance()
     print("\nthese are the model feature importances\n")
     view_feature_importances(df, model)
@@ -228,3 +230,5 @@ def run_predictive_model(df):
 if __name__ == "__main__":
     df = load_master_training_df()
     df = feature_engineering(df)
+    # model = run_predictive_model(df)
+    write_model_to_pkl(model, 'lightweight_vanilla_rf')
