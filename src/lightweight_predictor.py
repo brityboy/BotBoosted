@@ -4,6 +4,7 @@ from prediction_model import load_pickled_model
 import numpy as np
 import time
 import pandas as pd
+from unidecode import unidecode
 
 history_model = load_pickled_model('models/account_history_rf_model.pkl')
 behavior_model = load_pickled_model('models/behavior_rate_rf_model.pkl')
@@ -36,6 +37,8 @@ def make_lightweight_predictions(tweet_list):
     predicted_tweets = np.hstack((tweets, pred.reshape(-1, 1)))
     columns = ['id', 'text', 'screen_name', 'pred']
     predicted_tweets = pd.DataFrame(predicted_tweets, columns=columns)
+    predicted_tweets.pred = predicted_tweets.pred.apply(float).apply(int)
+    predicted_tweets.text = predicted_tweets.text.apply(unidecode)
     return predicted_tweets
 
 
