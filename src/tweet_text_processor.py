@@ -24,6 +24,7 @@ import warnings
 import operator as op
 from paretonmf import ParetoNMF
 
+
 def fix_the_sequence_of_repeated_characters(word):
     '''
     INPUT
@@ -92,7 +93,11 @@ def tokenize_tweet(text):
         elif emoticon:
             token_list.append(tw.emoticons.analyze_tweet(token).lower())
         else:
-            token = token.translate(None, string.punctuation)
+            # token = token.translate(None, string.punctuation)
+            replace_punctuation = \
+                string.maketrans(string.punctuation,
+                                 ' '*len(string.punctuation))
+            token = token.translate(replace_punctuation)
             token = fix_the_sequence_of_repeated_characters(token)
             token_list.append(token)
     return ' '.join(token_list)
@@ -376,7 +381,7 @@ def compute_doc_importance_parallel(tfidf, matrix, topic_label):
     split_info_tuple_list = split_list(info_tuple_list, n_processes)
     start = time.time()
     results = pool.map(tuple_igr_computation, split_info_tuple_list)
-    print "multiprocessing igr computation: ", time.time() - start
+    print("multiprocessing igr computation: ", time.time() - start)
     return igr_list, bag_of_words
 
 
@@ -389,7 +394,7 @@ def tuple_igr_computation(info_tuple):
     Returns
     '''
     attribute, df, y = info_tuple
-    print attribute
+    print(attribute)
     try:
         return information_gain_ratio_continuous(attribute, df, y)
     except:
@@ -408,6 +413,45 @@ def remove_nan_tweets_from_df(df):
     df['istext'] = df.text.apply(lambda x: 1 if type(x) == str else 0)
     df = df.query('istext == 1')
     return df
+
+
+def get_most_importance_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
+                                                   topic_label, df):
+    '''
+    INPUT
+         - tfidf: this is the tfidf object
+         - H: matrix, this is the topic matrix from NMF
+         - tfidf_matrix: this is the tfidf matrix
+         - topic_label: this is a list that has the topic label for each doc
+         - df: this dataframe has all the tweets
+    OUTPUT
+
+    Returns the most important tweets per topic by getting the average tfidf
+    of the words in the sentence
+    '''
+    bag_of_words = np.array(map(unidecode, tfidf.get_feature_names()))
+    topic_label = np.array(topic_label)
+    ntweets = topic_label.shape[0]
+    tfidfsum = np.sum(tfidf_matrix, axis=1)
+    wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
+                                    arr=tfidf_matrix.todense())
+    avg_sent_imp = tfidfsum/wordcount.reshape(-1, 1)
+    avg_sent_imp = np.asarray(avg_sent_imp).flatten()
+    tweetarray = df.text.values
+    for i, unique_topic in enumerate(np.unique(topic_label)):
+        subset_tweet_array = tweetarray[topic_label == unique_topic]
+        subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
+        nsubtweets = subset_sent_importance.shape[0]
+        print('\n')
+        print('topic #{}'.format(i+1))
+        print('this is the exemplary tweet from this topic')
+        print(subset_tweet_array[np.argmax(subset_sent_importance)])
+        print('\n')
+        print('these are the top words from this topic')
+        print(bag_of_words[np.argsort(H[i])[::-1]][:10])
+        subset_percent = round(float(nsubtweets)/ntweets*100, 2)
+        print('{} percent of tweets are in this topic'.format(subset_percent))
+    pass
 
 
 def get_most_importance_tweets_per_topic(tfidf_matrix,
@@ -461,7 +505,7 @@ def get_intra_topic_similarity_in_w_matrix(W, metric):
                                                   metric=metric,
                                                   n_jobs=-1)))
         average = total/float(ncr(subset.shape[1], 2))
-        print average
+        print(average)
 
 
 def check_runtime(n_topics, metric):
@@ -479,7 +523,7 @@ def check_runtime(n_topics, metric):
     start = time.time()
     W, H, nmf, topic_label = fit_nmf(tfidf_matrix, n_topics)
     get_intra_topic_similarity_in_w_matrix(W, metric)
-    print "distance computation time: ", time.time() - start
+    print("distance computation time: ", time.time() - start)
 
 
 def jsd(x, y):
@@ -518,7 +562,8 @@ def ncr(n, r):
     there-a-math-ncr-function-in-python
     '''
     r = min(r, n-r)
-    if r == 0: return 1
+    if r == 0:
+        return 1
     numer = reduce(op.mul, xrange(n, n-r, -1))
     denom = reduce(op.mul, xrange(1, r+1))
     return numer//denom
@@ -567,29 +612,34 @@ def extract_tweets_from_dataframe(df):
     print('tokenizing tweets...')
     documents = [document for document in
                  df.text.values if type(document) == str]
+    # documents = [document for document in
+    #              df.text.values if len(document.split()) > 1]
     start = time.time()
     tokenized_tweets = multiprocess_tokenize_tweet(documents)
-    print "tokenizing the tweets took: ", time.time() - start
+    print("tokenizing the tweets took: ", time.time() - start)
     print('creating the tfidf_matrix...')
     start = time.time()
     tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
-    print "vectorizing took: ", time.time() - start
+    print("vectorizing took: ", time.time() - start)
     print('extracting topics...')
     start = time.time()
-    pnmf = ParetoNMF(pnmf_verbose=True)
+    pnmf = ParetoNMF(noise_pct=.20, step=1, pnmf_verbose=True)
     pnmf.evaluate(tfidf_matrix)
     W = pnmf.nmf.transform(tfidf_matrix)
-    # H = pnmf.nmf.components_
+    H = pnmf.nmf.components_
     topic_label = np.apply_along_axis(func1d=np.argmax,
                                       axis=1, arr=W)
     # W, H, nmf, topic_label = fit_nmf(tfidf_matrix, topic_count)
     # print "extracted {} topics: ".format(topic_count), time.time() - start
-    print "extracted {} topics: ".format(pnmf.topic_count), time.time() - start
+    print("extracted {} topics: "
+          .format(pnmf.topic_count), time.time() - start)
     print('fetching important tweets...')
     start = time.time()
-    get_most_importance_tweets_per_topic(tfidf_matrix,
-                                         topic_label, df)
-    print "fetching took: ", time.time() - start
+    # get_most_importance_tweets_per_topic(tfidf_matrix,
+    #                                      topic_label, df)
+    get_most_importance_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
+                                                   topic_label, df)
+    print("fetching took: ", time.time() - start)
 
 
 def process_real_and_fake_tweets(df):
@@ -615,7 +665,6 @@ def process_real_and_fake_tweets(df):
     #                               20 if realtopics > 20 else realtopics)
     extract_tweets_from_dataframe(fakedf)
     extract_tweets_from_dataframe(realdf)
-
 
 
 if __name__ == "__main__":
