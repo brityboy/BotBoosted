@@ -239,11 +239,16 @@ class ParetoNMF(object):
         if self.pnmf_verbose:
             print('{} is the topic distribution'.format(sorted_topics))
         topics_with_rich_content = np.sum(cum_sum > self.rich_content)
-        if topics_with_rich_content > self.rich_topics:
+        if topics_with_rich_content == self.rich_topics:
+            return True
+        else:
             self.rich_topics = topics_with_rich_content
             return False
-        else:
-            return True
+        # if topics_with_rich_content > self.rich_topics:
+        #     self.rich_topics = topics_with_rich_content
+        #     return False
+        # else:
+        #     return True
 
 if __name__ == "__main__":
     df = pd.read_csv('data/trumptweets.csv')
