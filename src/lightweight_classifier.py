@@ -326,10 +326,10 @@ if __name__ == "__main__":
     model_ens = RandomForestClassifier(n_jobs=-1)
     paramgrid = {'n_estimators': [200],
                  'max_features': ['auto'],
-                 'criterion': ['gini', 'entropy'],
-                 'min_samples_split': [2, 4, 6, 8, 10],
-                 'min_samples_leaf': [3, 5, 7, 9],
-                 'max_depth': [10, 20, 30, 40, 50],
+                 'criterion': ['gini'],
+                 'min_samples_split': [6],
+                 'min_samples_leaf': [3],
+                 'max_depth': [10],
                  'bootstrap': [True]}
     model_ens, gs = gridsearch(paramgrid, model_ens, ensemble_X, y_train_b)
     # model_ens = evaluate_model(model_ens, ensemble_X, y_train_b)
@@ -345,3 +345,13 @@ if __name__ == "__main__":
                                  y_pred_test_b.reshape(-1, 1)))
     view_classification_report(model_ens, ensemble_X_test, y_test_b)
     print(confusion_matrix(y_test_b, model_ens.predict(ensemble_X_test)))
+    y_all = np.hstack((y_train_b, y_test_b))
+    behavior_X = np.vstack((X_train_bw, X_test_b))
+    behavior_rate_X = np.vstack((X_train_bwr, X_test_br))
+    ensemble_X = np.vstack((ensemble_X, ensemble_X_test))
+    model.fit(behavior_X, y_all)
+    modelb.fit(behavior_rate_X, y_all)
+    model_ens.fit(ensemble_X, y_all)
+    write_model_to_pkl(model, 'account_history_rf')
+    write_model_to_pkl(modelb, 'behavior_rate_rf')
+    write_model_to_pkl(model_ens, 'ensemble_rf')
