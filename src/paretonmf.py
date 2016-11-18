@@ -177,12 +177,6 @@ class ParetoNMF(object):
         self.rich_topics = 0
         self.verbose = verbose
 
-    # def __init__(self, noise_pct=.2, step=2, start=2, pnmf_verbose=False,
-    #              max_steps=100, init='nndsvdar', solver='cd',
-    #              tol=0.0001, max_iter=200, random_state=None,
-    #              alpha=0.0, l1_ratio=0.0, shuffle=False,
-    #              nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
-
     def evaluate(self, matrix):
         '''
         INPUT
