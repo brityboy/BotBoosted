@@ -10,7 +10,7 @@ class ParetoNMF(object):
     this is a class that heuristically determines the number of latent topics
     in a corpus of documents iteratively, founded on the following assumptions
     a) n percent of documents within a corpus is noise
-    b) more topics extracted from the corpus using NMF if the rich content
+    b) more topics extracted from the corpus using NMF if the rich contentrc/
     within a corpus, which makes up 1-n percent of the documents within a
     corpus, are the items being decomposed further into topics rather than
     the n percent of documents which is the noise
@@ -213,6 +213,16 @@ class ParetoNMF(object):
                 if self.pnmf_verbose:
                     print('heuristic topic count is {}'
                           .format(self.topic_count))
+                    # self.topic_count = self.topic_count - self.step
+                    # nmf = NMF(n_components=self.topic_count, init=self.init,
+                    #           solver=self.solver, tol=self.tol, max_iter=self.max_iter,
+                    #           random_state=self.random_state, alpha=self.alpha,
+                    #           l1_ratio=self.l1_ratio, verbose=self.verbose,
+                    #           shuffle=self.shuffle, nls_max_iter=self.nls_max_iter,
+                    #           sparseness=self.sparseness, beta=self.beta,
+                    #           eta = self.eta)
+                    # nmf.fit(matrix)
+                    # self.nmf = nmf
                 return self.topic_count
 
     def _stopping_condition(self):
