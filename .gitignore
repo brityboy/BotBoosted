@@ -13,3 +13,4 @@
 emoticons.py
 twokenize.py
 TweetNLP.py
+*.ipynb_checkpoints
