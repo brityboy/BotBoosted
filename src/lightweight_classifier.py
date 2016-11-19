@@ -404,10 +404,14 @@ def behavior_network_ratio_feature_creation(df):
     df['tweets_friends'] = df.statuses_count / df.friends_count
     df['likes_followers'] = df.favourites_count / df.followers_count
     df['likes_friends'] = df.favourites_count / df.friends_count
-    df.tweets_followers = df.tweets_followers.apply(lambda tf: 0 if tf == np.inf else tf)
-    df.tweets_friends = df.tweets_friends.apply(lambda tf: 0 if tf == np.inf else tf)
-    df.likes_followers = df.likes_followers.apply(lambda lf: 0 if lf == np.inf else lf)
-    df.likes_friends = df.likes_friends.apply(lambda lf: 0 if lf == np.inf else lf)
+    df.tweets_followers = \
+        df.tweets_followers.apply(lambda tf: -999 if tf == np.inf else tf)
+    df.tweets_friends = \
+        df.tweets_friends.apply(lambda tf: -999 if tf == np.inf else tf)
+    df.likes_followers = \
+        df.likes_followers.apply(lambda lf: -999 if lf == np.inf else lf)
+    df.likes_friends = \
+        df.likes_friends.apply(lambda lf: -999 if lf == np.inf else lf)
     df = df.fillna(-999)
     return df
 
@@ -434,8 +438,10 @@ if __name__ == "__main__":
     cyrusX = cyrusdf.values
     celebX = celebdf.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
-    cyX_train, cyX_test, cyy_train, cyy_test = train_test_split(cyrusX, ycyrus, test_size=.2)
-    ceX_train, ceX_test, cey_train, cey_test = train_test_split(celebX, yceleb, test_size=.2)
+    cyX_train, cyX_test, cyy_train, cyy_test = \
+        train_test_split(cyrusX, ycyrus, test_size=.2)
+    ceX_train, ceX_test, cey_train, cey_test = \
+        train_test_split(celebX, yceleb, test_size=.2)
     X_train_b, y_train_b = balance_classes(RandomUnderSampler(),
                                            X_train, y_train)
     X_test_b, y_test_b = balance_classes(RandomUnderSampler(),
@@ -452,8 +458,8 @@ if __name__ == "__main__":
     paramgrid = {'n_estimators': [200],
                  'max_features': ['auto'],
                  'criterion': ['entropy'],
-                 'min_samples_split': [6],
-                 'min_samples_leaf': [3],
+                 'min_samples_split': [10],
+                 'min_samples_leaf': [8],
                  'max_depth': [30],
                  'bootstrap': [True]}
     model = RandomForestClassifier(n_jobs=-1)
@@ -482,8 +488,8 @@ if __name__ == "__main__":
     paramgrid = {'n_estimators': [200],
                  'max_features': ['auto'],
                  'criterion': ['entropy'],
-                 'min_samples_split': [2],
-                 'min_samples_leaf': [3],
+                 'min_samples_split': [16],
+                 'min_samples_leaf': [18],
                  'max_depth': [30],
                  'bootstrap': [True]}
     modelb = RandomForestClassifier(n_jobs=-1)
@@ -512,11 +518,11 @@ if __name__ == "__main__":
     ensemble_X = np.hstack((X_train_bw, X_train_bwr,
                             y_pred.reshape(-1, 1), y_pred_b.reshape(-1, 1)))
     model_ens = RandomForestClassifier(n_jobs=-1)
-    paramgrid = {'n_estimators': [200],
+    paramgrid = {'n_estimators': [500],
                  'max_features': ['auto'],
                  'criterion': ['entropy'],
-                 'min_samples_split': [8],
-                 'min_samples_leaf': [5],
+                 'min_samples_split': [16],
+                 'min_samples_leaf': [11],
                  'max_depth': [20],
                  'bootstrap': [True]}
     model_ens, gs = gridsearch(paramgrid, model_ens, ensemble_X, y_train_b)
@@ -533,13 +539,30 @@ if __name__ == "__main__":
                                  y_pred_test_b.reshape(-1, 1)))
     view_classification_report(model_ens, ensemble_X_test, y_test_b)
     print(confusion_matrix(y_test_b, model_ens.predict(ensemble_X_test)))
-    y_all = np.hstack((y_train_b, y_test_b))
-    behavior_X = np.vstack((X_train_bw, X_test_b))
-    behavior_rate_X = np.vstack((X_train_bwr, X_test_br))
-    ensemble_X = np.vstack((ensemble_X, ensemble_X_test))
-    model.fit(behavior_X, y_all)
-    modelb.fit(behavior_rate_X, y_all)
-    model_ens.fit(ensemble_X, y_all)
-    write_model_to_pkl(model, 'account_history_rf_v2')
-    write_model_to_pkl(modelb, 'behavior_rate_rf_v2')
-    write_model_to_pkl(model_ens, 'ensemble_rf_v2')
+    columns = \
+        list(df.columns)+[column+'_rate' for
+                          column in df.columns] + \
+        ['pred_model_1', 'pred_model_2']
+    ensdf = pd.DataFrame(ensemble_X, columns=columns)
+    view_feature_importances(ensdf, model_ens)
+    print('evaluating the model on the new kind of spam')
+    newX = np.vstack((cyX_test, ceX_test))
+    newXbr = newX/newX[:, 13].reshape(-1, 1)
+    newy = np.hstack((cyy_test, cey_test))
+    newy_pred = model.predict(newX)
+    newy_pred_b = modelb.predict(newXbr)
+    newXens = np.hstack((newX, newXbr,
+                         newy_pred.reshape(-1, 1),
+                         newy_pred_b.reshape(-1, 1)))
+    print(confusion_matrix(newy, model_ens.predict(newXens)))
+    # print('fitting to all and writing to pkl')
+    # y_all = np.hstack((y_train_b, y_test_b))
+    # behavior_X = np.vstack((X_train_bw, X_test_b))
+    # behavior_rate_X = np.vstack((X_train_bwr, X_test_br))
+    # ensemble_X = np.vstack((ensemble_X, ensemble_X_test))
+    # model.fit(behavior_X, y_all)
+    # modelb.fit(behavior_rate_X, y_all)
+    # model_ens.fit(ensemble_X, y_all)
+    # write_model_to_pkl(model, 'account_history_rf_v2')
+    # write_model_to_pkl(modelb, 'behavior_rate_rf_v2')
+    # write_model_to_pkl(model_ens, 'ensemble_rf_v2')
