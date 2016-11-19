@@ -392,31 +392,69 @@ def create_ensemble_model(df):
     # write_model_to_pkl(modelb, 'behavior_rate_rf')
     # write_model_to_pkl(model_ens, 'ensemble_rf')
 
+
+def behavior_network_ratio_feature_creation(df):
+    '''
+    INPUT
+         - dataframe
+    OUTPUT
+         - dataframe with additional features
+    '''
+    df['tweets_followers'] = df.statuses_count / df.followers_count
+    df['tweets_friends'] = df.statuses_count / df.friends_count
+    df['likes_followers'] = df.favourites_count / df.followers_count
+    df['likes_friends'] = df.favourites_count / df.friends_count
+    df.tweets_followers = df.tweets_followers.apply(lambda tf: 0 if tf == np.inf else tf)
+    df.tweets_friends = df.tweets_friends.apply(lambda tf: 0 if tf == np.inf else tf)
+    df.likes_followers = df.likes_followers.apply(lambda lf: 0 if lf == np.inf else lf)
+    df.likes_friends = df.likes_friends.apply(lambda lf: 0 if lf == np.inf else lf)
+    df = df.fillna(-999)
+    return df
+
 if __name__ == "__main__":
     # df = load_master_training_df()
     # df = feature_engineering(df)
     # df = drop_unnecessary_features(df)
     # df.to_csv('data/training_user_tweet_data.csv', index=None)
     df = pd.read_csv('data/training_user_tweet_data.csv')
+    cyrusdf = pd.read_csv('data/mileycyrususers.csv')
+    celebdf = pd.read_csv('data/celebrityusers.csv')
+    df = behavior_network_ratio_feature_creation(df)
+    cyrusdf = behavior_network_ratio_feature_creation(cyrusdf)
+    celebdf = behavior_network_ratio_feature_creation(celebdf)
     print('this is the portion that checks absolute user behavior values')
     # model = run_predictive_model(df)
     y = df.pop('label_y')
     y = y.values
     X = df.values
+    ycyrus = cyrusdf.pop('label_y')
+    ycyrus = ycyrus.values
+    yceleb = celebdf.pop('label_y')
+    yceleb = yceleb.values
+    cyrusX = cyrusdf.values
+    celebX = celebdf.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
+    cyX_train, cyX_test, cyy_train, cyy_test = train_test_split(cyrusX, ycyrus, test_size=.2)
+    ceX_train, ceX_test, cey_train, cey_test = train_test_split(celebX, yceleb, test_size=.2)
     X_train_b, y_train_b = balance_classes(RandomUnderSampler(),
                                            X_train, y_train)
     X_test_b, y_test_b = balance_classes(RandomUnderSampler(),
                                          X_test, y_test)
+    X_train_b = np.vstack((X_train_b, cyX_train, ceX_train))
+    y_train_b = np.hstack((y_train_b, cyy_train, cey_train))
+    X_test_b = np.vstack((X_test_b, cyX_test, ceX_test))
+    y_test_b = np.hstack((y_test_b, cyy_test, cey_test))
+    # X_train_b, y_train_b = X_train, y_train
+    # X_test_b, y_test_b = X_test, y_test
     # weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
     weights = 1
     X_train_bw = X_train_b * weights
     paramgrid = {'n_estimators': [200],
                  'max_features': ['auto'],
                  'criterion': ['entropy'],
-                 'min_samples_split': [8],
-                 'min_samples_leaf': [3],
-                 'max_depth': [30],
+                 'min_samples_split': [2, 4, 6, 8, 10],
+                 'min_samples_leaf': [3, 5, 7, 9],
+                 'max_depth': [10, 20, 30, 40],
                  'bootstrap': [True]}
     model = RandomForestClassifier(n_jobs=-1)
     # model = GaussianNB()
@@ -495,10 +533,10 @@ if __name__ == "__main__":
                                  y_pred_test_b.reshape(-1, 1)))
     view_classification_report(model_ens, ensemble_X_test, y_test_b)
     print(confusion_matrix(y_test_b, model_ens.predict(ensemble_X_test)))
-    y_all = np.hstack((y_train_b, y_test_b))
-    behavior_X = np.vstack((X_train_bw, X_test_b))
-    behavior_rate_X = np.vstack((X_train_bwr, X_test_br))
-    ensemble_X = np.vstack((ensemble_X, ensemble_X_test))
+    # y_all = np.hstack((y_train_b, y_test_b))
+    # behavior_X = np.vstack((X_train_bw, X_test_b))
+    # behavior_rate_X = np.vstack((X_train_bwr, X_test_br))
+    # ensemble_X = np.vstack((ensemble_X, ensemble_X_test))
     # model.fit(behavior_X, y_all)
     # modelb.fit(behavior_rate_X, y_all)
     # model_ens.fit(ensemble_X, y_all)
