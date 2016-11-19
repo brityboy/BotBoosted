@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 # from information_gain_ratio import *
 from unidecode import unidecode
 import multiprocessing as mp
-import threading
 import time
 # from scipy.spatial.distance import cosine
 import warnings
@@ -68,9 +67,10 @@ def tokenize_tweet(text):
         separators = tw.Separators_RE.search(token)
         emoticon = tw.emoticons.Emoticon_RE.search(token)
         if url:
-            token_list.append('url')
+            token_list.append('_url_')
         elif token[0] == '#':
             # token_list.append(token[1:])
+            token_list.append('_hash_')
             pass
         elif time:
             pass
@@ -81,15 +81,16 @@ def tokenize_tweet(text):
         elif numnum:
             pass
         elif token[0] == '@':
-            pass
+            token_list.append('_user_')
         elif mentions:
-            token_list.append('user_mention')
+            # token_list.append('user_mention')
+            token_list.append('_user_')
         elif token == 'RT':
             pass
         elif token == 'Retweeted':
             pass
         elif type(token) == int:
-            pass
+            token_list.append('_number_')
         elif emoticon:
             token_list.append(tw.emoticons.analyze_tweet(token).lower())
         else:
@@ -445,7 +446,9 @@ def get_most_importance_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
         print('\n')
         print('topic #{}'.format(i+1))
         print('this is the exemplary tweet from this topic')
-        print(subset_tweet_array[np.argmax(subset_sent_importance)])
+        # print(subset_tweet_array[np.argmax(subset_sent_importance)])
+        print('these are 5 unique example tweets from this topic')
+        print(np.unique(subset_tweet_array[np.argsort(subset_sent_importance)[::-1]])[:5])
         print('\n')
         print('these are the top words from this topic')
         print(bag_of_words[np.argsort(H[i])[::-1]][:10])
@@ -663,8 +666,10 @@ def process_real_and_fake_tweets(df):
     #                               20 if faketopics > 20 else faketopics)
     # extract_tweets_from_dataframe(realdf,
     #                               20 if realtopics > 20 else realtopics)
-    extract_tweets_from_dataframe(fakedf)
-    extract_tweets_from_dataframe(realdf)
+    if fakedf.shape[0] > 0:
+        extract_tweets_from_dataframe(fakedf)
+    if realdf.shape[0] > 0:
+        extract_tweets_from_dataframe(realdf)
 
 
 if __name__ == "__main__":
