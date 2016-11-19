@@ -3,6 +3,9 @@ import pandas as pd
 from classification_model import *
 from process_loaded_data import *
 from datetime import datetime
+from unidecode import unidecode
+from pymongo import MongoClient
+from tweet_scrape_processor import process_tweet
 
 
 def load_all_training_data():
@@ -65,8 +68,8 @@ def get_most_recent_tweets_per_user():
     tweet recorded for that user_id
     '''
     tweetdf = pd.read_csv('data/training_tweets.csv')
-    user_and_max_date = tweetdf[['user_id',
-                                 'timestamp']].groupby('user_id').max()
+    # user_and_max_date = tweetdf[['user_id',
+    #                              'timestamp']].groupby('user_id').max()
     tweetdf.timestamp = pd.to_datetime(tweetdf.timestamp)
     index = tweetdf.groupby('user_id').apply(lambda x: np.argmax(x.timestamp))
     tweetdf = tweetdf.loc[index.values]
@@ -182,6 +185,36 @@ def feature_engineering(df):
     return df
 
 
+def get_and_process_mongo_tweets(dbname, collection):
+    '''
+    INPUT
+         - dbname
+         - collection
+    OUTPUT
+         - tweet_ensemble
+         - tweets
+    Returns
+    '''
+    client = MongoClient()
+    tweet_list = []
+    db = client[dbname]
+    tab = db[collection].find()
+    for document in tab:
+        tweet_list.append(document)
+    processed_tweets = np.array([process_tweet(tweet) for tweet in tweet_list])
+    tweet_history = processed_tweets[:, :19].astype(float)
+    # tweets = processed_tweets[:, 19:]
+    # tweet_behavior = \
+    #     tweet_history/tweet_history[:, 13].reshape(-1, 1)
+    # tweet_ensemble = np.hstack((tweet_history,
+    #                             tweet_behavior))
+    # columns = ['id', 'text', 'screen_name']
+    # tweets = pd.DataFrame(tweets, columns=columns)
+    # tweets.text = tweets.text.apply(unidecode)
+    # return tweet_ensemble, tweets
+    return tweet_history
+
+
 def drop_unnecessary_features(df):
     '''
     INPUT
@@ -241,6 +274,123 @@ def run_predictive_model(df):
     print("\nthese are the model feature importances\n")
     view_feature_importances(df, model)
     return model
+
+
+def create_ensemble_model(df):
+    '''
+    INPUT
+         - dataframe in the right format for predictions
+    OUTPUT
+         - all the necessary procedures for a predictive model
+    Returns none, saves pickled models to local
+    '''
+    print('this is the portion that checks absolute user behavior values')
+    # model = run_predictive_model(df)
+    y = df.pop('label_y')
+    y = y.values
+    X = df.values
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
+    X_train_b, y_train_b = balance_classes(RandomUnderSampler(),
+                                           X_train, y_train)
+    X_test_b, y_test_b = balance_classes(RandomUnderSampler(),
+                                         X_test, y_test)
+    # weights = get_igr_attribute_weights(X_train_b, y_train_b, df)
+    weights = 1
+    X_train_bw = X_train_b * weights
+    paramgrid = {'n_estimators': [200],
+                 'max_features': ['auto'],
+                 'criterion': ['entropy'],
+                 'min_samples_split': [8],
+                 'min_samples_leaf': [3],
+                 'max_depth': [30],
+                 'bootstrap': [True]}
+    model = RandomForestClassifier(n_jobs=-1)
+    # model = GaussianNB()
+    # model = SVC()
+    # model = evaluate_model(model, X_train_bw, y_train_b)
+    model, gs = gridsearch(paramgrid, model, X_train_bw, y_train_b)
+    print("\nthis is the model performance on the training data\n")
+    view_classification_report(model, X_train_bw, y_train_b)
+    print(confusion_matrix(y_train_b, model.predict(X_train_bw)))
+    print("this is the model performance on the test data\n")
+    view_classification_report(model, X_test_b*weights, y_test_b)
+    print(confusion_matrix(y_test_b, model.predict(X_test_b*weights)))
+    print("this is the model performance on different split ratios\n")
+    # etcb = Eval(model, .05, .5, .05, 100)
+    # etcb.evaluate_data(X_test_b*weights, y_test_b)
+    # etcb.plot_performance()
+    print("\nthese are the model feature importances\n")
+    view_feature_importances(df, model)
+    y_pred = model.predict_proba(X_train_bw)[:, 1]
+    print('this is the portion that checks user behavior rate values')
+    X_train_bwr = X_train_bw/X_train_bw[:, 13].reshape(-1, 1)
+    # weights_br = get_igr_attribute_weights(X_train_bwr, y_train_b, df)
+    weights = 1
+    X_train_bwr = X_train_bwr * weights
+    paramgrid = {'n_estimators': [200],
+                 'max_features': ['auto'],
+                 'criterion': ['entropy'],
+                 'min_samples_split': [2],
+                 'min_samples_leaf': [3],
+                 'max_depth': [20],
+                 'bootstrap': [True]}
+    modelb = RandomForestClassifier(n_jobs=-1)
+    # # model = GaussianNB()
+    # # model = SVC()
+    # modelb = evaluate_model(modelb, X_train_bwr, y_train_b)
+    modelb, gs = gridsearch(paramgrid, modelb, X_train_bwr, y_train_b)
+    print("\nthis is the model performance on the training data\n")
+    view_classification_report(modelb, X_train_bwr, y_train_b)
+    print(confusion_matrix(y_train_b, modelb.predict(X_train_bwr)))
+    print("this is the model performance on the test data\n")
+    view_classification_report(modelb,
+                               X_test_b*weights/X_test_b[:,
+                                                         13].reshape(-1,
+                                                                     1),
+                               y_test_b)
+    print(confusion_matrix(y_test_b, modelb.predict(X_test_b*weights)))
+    # print("this is the model performance on different split ratios\n")
+    # # etcb = Eval(model, .05, .5, .05, 100)
+    # # etcb.evaluate_data(X_test_b*weights, y_test_b)
+    # # etcb.plot_performance()
+    print("\nthese are the model feature importances\n")
+    view_feature_importances(df, modelb)
+    y_pred_b = modelb.predict_proba(X_train_bwr)[:, 1]
+    print('this is the portion that ensembles these two facets')
+    ensemble_X = np.hstack((X_train_bw, X_train_bwr,
+                            y_pred.reshape(-1, 1), y_pred_b.reshape(-1, 1)))
+    model_ens = RandomForestClassifier(n_jobs=-1)
+    paramgrid = {'n_estimators': [200],
+                 'max_features': ['auto'],
+                 'criterion': ['gini'],
+                 'min_samples_split': [6],
+                 'min_samples_leaf': [3],
+                 'max_depth': [10],
+                 'bootstrap': [True]}
+    model_ens, gs = gridsearch(paramgrid, model_ens, ensemble_X, y_train_b)
+    # model_ens = evaluate_model(model_ens, ensemble_X, y_train_b)
+    print("\nthis is the model performance on the training data\n")
+    view_classification_report(model_ens, ensemble_X, y_train_b)
+    print(confusion_matrix(y_train_b, model_ens.predict(ensemble_X)))
+    print("this is the model performance on the test data\n")
+    y_pred_test = model.predict_proba(X_test_b)[:, 1]
+    X_test_br = X_test_b/X_test_b[:, 13].reshape(-1, 1)
+    y_pred_test_b = modelb.predict_proba(X_test_br)[:, 1]
+    ensemble_X_test = np.hstack((X_test_b, X_test_br,
+                                 y_pred_test.reshape(-1, 1),
+                                 y_pred_test_b.reshape(-1, 1)))
+    view_classification_report(model_ens, ensemble_X_test, y_test_b)
+    print(confusion_matrix(y_test_b, model_ens.predict(ensemble_X_test)))
+    y_all = np.hstack((y_train_b, y_test_b))
+    behavior_X = np.vstack((X_train_bw, X_test_b))
+    behavior_rate_X = np.vstack((X_train_bwr, X_test_br))
+    ensemble_X = np.vstack((ensemble_X, ensemble_X_test))
+    # model.fit(behavior_X, y_all)
+    # modelb.fit(behavior_rate_X, y_all)
+    # model_ens.fit(ensemble_X, y_all)
+    # write_model_to_pkl(model, 'account_history_rf')
+    # write_model_to_pkl(modelb, 'behavior_rate_rf')
+    # write_model_to_pkl(model_ens, 'ensemble_rf')
 
 if __name__ == "__main__":
     # df = load_master_training_df()
