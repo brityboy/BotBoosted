@@ -10,8 +10,6 @@
 *.txt
 *.sql
 *.pkl
-emoticons.py
-twokenize.py
 TweetNLP.py
 *.ipynb_checkpoints
 *.ipynb
