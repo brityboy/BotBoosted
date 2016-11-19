@@ -6,7 +6,6 @@ from prediction_model import create_dictionary_with_id_and_predictions
 from load_mongo_tweet_data import load_pred_dict_from_pickle, get_tweets
 from tweet_text_processor import process_real_and_fake_tweets
 from tweet_scraper import download_tweets_given_search_query
-from tweet_scrape_processor import process_tweet
 from lightweight_predictor import make_lightweight_predictions
 from pymongo import MongoClient
 
@@ -87,6 +86,10 @@ def botboosted_demonstration(searchQuery):
     print('making predictions...')
     start = time.time()
     predicted_tweets = make_lightweight_predictions(tweet_list)
+    del history_model
+    del behavior_model
+    del ensemble_model
+    del tweet_list
     print("making predictions took: ", time.time() - start)
     process_real_and_fake_tweets(predicted_tweets)
     print('\n')
@@ -122,5 +125,5 @@ def botboosted(searchQuery):
 
 
 if __name__ == "__main__":
-    # botboosted('hillary clinton')
-    botboosted_demonstration('hillary clinton email')
+    botboosted('Mocha Uson')
+    # botboosted_demonstration('donald trump sexual assault')
