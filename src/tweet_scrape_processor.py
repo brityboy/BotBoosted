@@ -1,10 +1,12 @@
 import dill as pickle
-from lightweight_classifier import convert_created_time_to_datetime
-# import pandas as pd
+# from lightweight_classifier import convert_created_time_to_datetime
+import pandas as pd
 import numpy as np
 from tweet_text_processor import split_list
 import multiprocessing as mp
 import time
+import pandas as pd
+from datetime import datetime
 
 
 def process_tweet(tweet):
@@ -55,6 +57,22 @@ def process_tweet(tweet):
                             has_mentions])
     text_vector = np.array([user_id, text, screen_name])
     return np.hstack((user_vector, text_vector))
+
+
+def convert_created_time_to_datetime(datestring):
+    '''
+    INPUT
+         - datestring: a string object either as a date or
+         a unix timestamp
+    OUTPUT
+         - a datetime object
+
+    Returns a pandas datetime object
+    '''
+    if len(datestring) == 30:
+        return pd.to_datetime(datestring)
+    else:
+        return pd.to_datetime(datetime.fromtimestamp(int(datestring[:10])))
 
 
 def multiprocess_process_tweet(tweet_list):
