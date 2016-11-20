@@ -1,12 +1,8 @@
-from information_gain_ratio import *
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.cross_validation import train_test_split, cross_val_score
-from process_loaded_data import *
 from sklearn.metrics import classification_report, confusion_matrix
 from imblearn.under_sampling import RandomUnderSampler
-from imblearn.over_sampling import RandomOverSampler, ADASYN
-from sklearn.cluster import DBSCAN
 import numpy as np
 import dill as pickle
 import pandas as pd
@@ -173,10 +169,10 @@ if __name__ == "__main__":
     #              'gamma': [.01, 'auto', 1.0, 5.0, 10.0, 11, 12, 13],
     #              'C': [.001, .01, .1, 1, 5]}
     # model = SVC(probability=True)
-    # model = RandomForestClassifier(n_jobs=-1)
-    model = GradientBoostingClassifier()
+    model = RandomForestClassifier(n_jobs=-1)
+    # model = GradientBoostingClassifier()
     # model, gridsearch = gridsearch(paramgrid, model, X_train_bw, y_train_b)
-    # model = evaluate_model(model, X_train_bw, y_train_b)
+    model = evaluate_model(model, X_train_bw, y_train_b)
     print("\nthis is the model performance on the training data\n")
     view_classification_report(model, X_train_b, y_train_b)
     confusion_matrix(y_train_b, model.predict(X_train_b))
@@ -190,4 +186,4 @@ if __name__ == "__main__":
     # print("\nthese are the model feature importances\n")
     # view_feature_importances(df, model)
     print(model)
-    write_model_to_pkl(model, 'tuned_gboostc')
+    # write_model_to_pkl(model, 'tuned_gboostc')
