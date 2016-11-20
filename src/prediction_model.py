@@ -1,6 +1,6 @@
 import pandas as pd
 import dill as pickle
-from load_test_data import *
+from load_test_data import write_dict_to_pkl
 
 
 def load_pickled_model(filename):
