@@ -233,4 +233,4 @@ def create_processed_dataframe():
 
 if __name__ == "__main__":
     df = create_processed_dataframe()
-    df.to_csv('data/training_df.csv')
+    # df.to_csv('data/training_df.csv')
