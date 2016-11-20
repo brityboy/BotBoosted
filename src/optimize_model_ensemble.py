@@ -4,11 +4,12 @@ import dill as pickle
 from sklearn.cross_validation import train_test_split
 import pandas as pd
 from imblearn.under_sampling import RandomUnderSampler
-from classification_model import *
+from classification_model import balance_classes
 from sklearn.ensemble import VotingClassifier
-from sklearn.metrics import classification_report, confusion_matrix
+# from sklearn.metrics import classification_report, confusion_matrix
 from evaltestcvbs import EvalTestCVBS as Eval
 import numpy as np
+
 
 def plot_roc_curve(model, X, y, modelname):
     '''
@@ -122,8 +123,6 @@ def write_model_to_pkl(model, model_name):
     with open('models/{}_model.pkl'.format(model_name), 'w+') as f:
         pickle.dump(model, f)
 
-
-
 if __name__ == "__main__":
     df = pd.read_csv('data/training_df.csv')
     df.drop('Unnamed: 0', axis=1, inplace=True)
@@ -139,10 +138,12 @@ if __name__ == "__main__":
     model_tuple_list = load_models_and_model_list()
     model_tuple_list = retrain_models(model_tuple_list, X_train_b, y_train_b)
     ensemble = create_voting_classifier_ensemble(model_tuple_list)
-    plot_multiple_roc_curves(model_tuple_list+[('ensemble', ensemble)], X_test_b, y_test_b)
+    plot_multiple_roc_curves(model_tuple_list+[('ensemble', ensemble)],
+                             X_test_b, y_test_b)
     print("this is the model performance on different split ratios\n")
     etcb = Eval(ensemble, .05, .95, .05, 100)
     etcb.evaluate_data(X_test_b, y_test_b)
     etcb.plot_performance()
-    ensemble.fit(np.vstack((X_train_b, X_test_b)), np.hstack((y_train_b, y_test_b)))
-    write_model_to_pkl(ensemble, 'voting_ensemble')
+    ensemble.fit(np.vstack((X_train_b, X_test_b)),
+                 np.hstack((y_train_b, y_test_b)))
+    # write_model_to_pkl(ensemble, 'voting_ensemble')
