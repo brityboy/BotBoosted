@@ -2,7 +2,12 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 from itertools import combinations
-import multiprocessing as mp
+
+
+'''
+these functions are the general functions used by all information gain ratio
+functions
+'''
 
 
 def is_categorical(x):
@@ -50,34 +55,6 @@ def entropy(y):
     return -1 * ent
 
 
-def make_split(X, y, split_value):
-    '''
-    INPUT:
-        - X: 2d numpy array
-        - y: 1d numpy array
-        - split_value: int/float/bool/str (value of feature)
-    OUTPUT:
-        - X1: 2d numpy array (feature matrix for subset 1)
-        - y1: 1d numpy array (labels for subset 1)
-        - X2: 2d numpy array (feature matrix for subset 2)
-        - y2: 1d numpy array (labels for subset 2)
-
-    Return the two subsets of the dataset achieved by the given feature and
-    value to split on.
-
-    Call the method like this:
-    >>> X1, y1, X2, y2 = make_split(X, y, split_value)
-
-    X1, y1 is a subset of the data.
-    X2, y2 is the other subset of the data.
-    '''
-    X1 = X[X <= split_value]
-    y1 = y[X <= split_value]
-    X2 = X[X > split_value]
-    y2 = y[X > split_value]
-    return X1, y1, X2, y2
-
-
 def information_gain(y, y1, y2, impurity_criterion):
     '''
     INPUT:
@@ -91,6 +68,12 @@ def information_gain(y, y1, y2, impurity_criterion):
     return impurity_criterion(y) - \
         (float(len(y1))/len(y) * impurity_criterion(y1) +
             float(len(y2))/len(y) * impurity_criterion(y2))
+
+
+'''
+these are the helper functions for the continuous version of information gain
+ratio
+'''
 
 
 def multiple_information_gain(y, y_list, impurity_criterion):
@@ -142,15 +125,13 @@ def determine_optimal_continuous_split_values(attribute, df, y):
          - y: 1d array, target
     OUTPUT
          - max_split: tuple of best values to split on
-         - info_gain_array: numpy array of all information gains
-         - possible_splits: list of all possible split values
     Returns tuple of split values that optimize information gain (min 1 max 3)
     '''
     attribute_value_array = df[attribute].values
     split_values = np.unique(sorted(attribute_value_array))[:-1]
-    possible_splits = list(combinations(split_values, 1))
+    # possible_splits = list(combinations(split_values, 1))
     max_info_gain = 0
-    for split in possible_splits:
+    for split in combinations(split_values, 1):
         X_list, y_list = make_multiple_split(attribute_value_array, y, split)
         if multiple_information_gain(y, y_list, entropy) > max_info_gain:
             max_info_gain = multiple_information_gain(y, y_list, entropy)
@@ -243,24 +224,70 @@ def make_multiple_split(X, y, split_value):
         return [X1, X2, X3, X4], [y1, y2, y3, y4]
 
 
-def load_contraceptive_data():
+def information_gain_ratio_continuous(attribute, df, y):
     '''
     INPUT
-         - none
+         - attribute: str, feature to check
+         - df: pandas dataframe of features
+         - y: 1d array, target
     OUTPUT
-         - df
-         - X
-         - y
-    Return the df, X features, y values for the cmc.data.txt dataset
+         - float
+    Returns the information gain ratio accdg to Quinlan's C4.5
     '''
-    df = pd.read_csv('data/cmc.data.txt', header=None)
-    df.columns = ['wife_age', 'wife_educ', 'hus_educ', 'num_kids', 'wife_rel',
-                  'wife_work_status', 'hus_job', 'living_std',
-                  'media_expo', 'label']
-    y = df.pop('label')
-    y = np.array(y)
-    X = df.values
-    return df, X, y
+    max_split = determine_optimal_continuous_split_values(attribute, df, y)
+    X_list, y_list = make_multiple_split(df[attribute].values, y, max_split)
+    ig = multiple_information_gain(y, y_list, entropy)
+    pig = potential_attribute_information_gain_continuous(X_list)
+    return ig/pig
+
+
+'''
+these functions below compute for information gain ratio for continuous
+variables and work in numpy, thus could potentially be much faster than
+the pandas version
+'''
+
+
+def information_gain_ratio_continuous_1d(X, y):
+    '''
+    INPUT
+         - X: continuous feature, 1d array
+         - y: 1d array, target
+    OUTPUT
+         - float
+    Returns the information gain ratio accdg to Quinlan's C4.5
+    '''
+    max_split = determine_optimal_continuous_split_values_1d(X, y)
+    X_list, y_list = make_multiple_split(X, y, max_split)
+    ig = multiple_information_gain(y, y_list, entropy)
+    pig = potential_attribute_information_gain_continuous(X_list)
+    return ig/pig
+
+
+def determine_optimal_continuous_split_values_1d(X, y):
+    '''
+    INPUT
+         - X: continuous feature, 1d array
+         - y: 1d array, target
+    OUTPUT
+         - max_split: tuple of best values to split on
+    Returns tuple of split values that optimize information gain (min 1 max 3)
+    '''
+    attribute_value_array = X
+    split_values = np.unique(sorted(attribute_value_array))[:-1]
+    max_info_gain = 0
+    for split in combinations(split_values, 1):
+        X_list, y_list = make_multiple_split(attribute_value_array, y, split)
+        if multiple_information_gain(y, y_list, entropy) > max_info_gain:
+            max_info_gain = multiple_information_gain(y, y_list, entropy)
+            max_split = split
+    return max_split
+
+
+'''
+these are the categorical functions that work 100 percent correctly accdg to
+ross quinlan's information gain ratio formulas from C4.5
+'''
 
 
 def information_gain_by_attribute_categorical(attribute, df, y):
@@ -332,37 +359,11 @@ def information_gain_ratio_categorical(attribute, df, y):
     return float(information_gain)/potential_information
 
 
-def information_gain_ratio_continuous(attribute, df, y):
-    '''
-    INPUT
-         - attribute: str, feature to check
-         - df: pandas dataframe of features
-         - y: 1d array, target
-    OUTPUT
-         - float
-    Returns the information gain ratio accdg to Quinlan's C4.5
-    '''
-    max_split = determine_optimal_continuous_split_values(attribute, df, y)
-    X_list, y_list = make_multiple_split(df[attribute].values, y, max_split)
-    ig = multiple_information_gain(y, y_list, entropy)
-    pig = potential_attribute_information_gain_continuous(X_list)
-    return ig/pig
-
-
-# def information_gain_ratio_continuous_1d(X, y):
-#     '''
-#     INPUT
-#          - X: continuous feature, 1d array
-#          - y: 1d array, target
-#     OUTPUT
-#          - float
-#     Returns the information gain ratio accdg to Quinlan's C4.5
-#     '''
-#     max_split = determine_optimal_continuous_split_values(attribute, df, y)
-#     X_list, y_list = make_multiple_split(df[attribute].values, y, max_split)
-#     ig = multiple_information_gain(y, y_list, entropy)
-#     pig = potential_attribute_information_gain_continuous(X_list)
-#     return ig/pig
+'''
+this function computes for information gain ratio, checks first if it is
+categorical or continuous, and then calls the appropriate functions
+currently works for dataframes only
+'''
 
 
 def information_gain_ratio(attribute, df, y):
@@ -381,6 +382,11 @@ def information_gain_ratio(attribute, df, y):
         return information_gain_ratio_categorical(attribute, df, y)
     else:
         return information_gain_ratio_continuous(attribute, df, y)
+
+
+'''
+these functions load toy data to test the functions on
+'''
 
 
 def load_play_golf():
@@ -421,6 +427,27 @@ def load_labor_negotiations_data():
     X = df.values
     return df, X, y
 
+
+def load_contraceptive_data():
+    '''
+    INPUT
+         - none
+    OUTPUT
+         - df
+         - X
+         - y
+    Return the df, X features, y values for the cmc.data.txt dataset
+    '''
+    df = pd.read_csv('data/cmc.data.txt', header=None)
+    df.columns = ['wife_age', 'wife_educ', 'hus_educ', 'num_kids', 'wife_rel',
+                  'wife_work_status', 'hus_job', 'living_std',
+                  'media_expo', 'label']
+    y = df.pop('label')
+    y = np.array(y)
+    X = df.values
+    return df, X, y
+
+
 if __name__ == "__main__":
     df, X, y = load_play_golf()
     print('information_gain')
@@ -437,5 +464,5 @@ if __name__ == "__main__":
     for attribute in df.columns:
         print(attribute, information_gain_ratio_categorical(attribute, df, y))
     print('\ntest information gain for temperature')
-    print(information_gain_ratio_continuous('temperature', df, y))
-    # print(information_gain_ratio_continuous_1d(df['temperature'].values, y))
+    print(information_gain_ratio_continuous('humidity', df, y))
+    print(information_gain_ratio_continuous_1d(df['humidity'].values, y))
