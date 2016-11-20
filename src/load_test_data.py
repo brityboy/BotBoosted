@@ -2,7 +2,7 @@ from unidecode import unidecode
 from pymongo import MongoClient
 from collections import defaultdict
 import pandas as pd
-from process_loaded_data import *
+from process_loaded_data import combine_user_info_with_feature_dict
 import dill as pickle
 
 
