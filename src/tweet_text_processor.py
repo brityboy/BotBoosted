@@ -14,7 +14,7 @@ from dill import pickle
 from sklearn.decomposition import NMF
 # from sklearn.metrics.pairwise import cosine_similarity, pairwise_distances
 import matplotlib.pyplot as plt
-# from information_gain_ratio import *
+from information_gain_ratio import *
 from unidecode import unidecode
 import multiprocessing as mp
 import time
@@ -40,7 +40,7 @@ def fix_the_sequence_of_repeated_characters(word):
         strings.sort(key=len, reverse=True)
         if strings:
             for string in strings:
-                word = word.replace(string, letter*2)
+                word = word.replace(string, letter * 2)
     return word
 
 
@@ -69,7 +69,6 @@ def tokenize_tweet(text):
         if url:
             token_list.append('_url_')
         elif token[0] == '#':
-            # token_list.append(token[1:])
             token_list.append('_hash_')
             pass
         elif time:
@@ -83,7 +82,6 @@ def tokenize_tweet(text):
         elif token[0] == '@':
             token_list.append('_user_')
         elif mentions:
-            # token_list.append('user_mention')
             token_list.append('_user_')
         elif token == 'RT':
             pass
@@ -94,7 +92,6 @@ def tokenize_tweet(text):
         elif emoticon:
             token_list.append(tw.emoticons.analyze_tweet(token).lower())
         else:
-            # token = token.translate(None, string.punctuation)
             replace_punctuation = \
                 string.maketrans(string.punctuation,
                                  ' '*len(string.punctuation))
@@ -151,21 +148,6 @@ def tokenize_tweet_list(split_docs):
     return [tokenize_tweet(text) for text in split_docs]
 
 
-def word_count_vectorizer(documents):
-    '''
-    INPUT
-         - list of documents
-    OUTPUT
-         - vectorizer: text vectorizer object
-         - word_count_matrix: sparse matrix of word counts
-
-    Processes the documents corpus using a word count vectorizer
-    '''
-    vect = CountVectorizer(stop_words='english')
-    word_counts_matrix = vect.fit_transform(documents)
-    return vect, word_counts_matrix
-
-
 def replace_infrequent_words_with_tkn(tokenized_tweets, n_words):
     '''
     INPUT
@@ -185,8 +167,11 @@ def replace_infrequent_words_with_tkn(tokenized_tweets, n_words):
         {token: freq for (token, freq) in word_count_dict.items() if freq <= 4}
     infreq_words = set(infreq_word_dict.keys())
     for tweet in tokenized_tweets:
-        processed_tweets.append(' '.join(['_tkn_' if token in infreq_words else token for token in tweet.split()]))
+        processed_tweets.append(' '.join(['_tkn_' if token in infreq_words
+                                          else token for token
+                                          in tweet.split()]))
     return processed_tweets
+
 
 def tfidf_vectorizer(documents):
     '''
@@ -202,142 +187,6 @@ def tfidf_vectorizer(documents):
     tfidf = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
     tfidf_matrix = tfidf.fit_transform(documents)
     return tfidf, tfidf_matrix
-
-
-def fit_LDA(matrix, n_topics):
-    '''
-    INPUT
-         - matrix: takes in a sparse word count matrix
-    OUTPUT
-         - topics: matrix
-         - topic_label: list
-    Returns the topic matrix for the specified number of topics requested
-    rows pertain to the different words, the columns pertain to the different
-    topics; and a list that has the label for that topic
-    '''
-    topic_label = []
-    lda = LatentDirichletAllocation(n_topics=n_topics, n_jobs=-1)
-    topics = lda.fit_transform(matrix)
-    for document in topics:
-        topic_label.append(np.argmax(document))
-    return topics, topic_label
-
-
-def compute_LDA_inter_topic_JS_distance(topics):
-    '''
-    INPUT
-         - topics: matrix of (documents, topics)
-    OUTPUT
-         - the list of the inter_topic distance
-         THERE IS SOMETHING WRONG WITH THIS BECAUSE IT SHOULD BE THE
-         INTER DOCUMENT DISTANCE AND NOT THE INTER TOPIC DISTANCE, FUCK
-         (MAYBE NMF INSTEAD FOR ALL PRACTICAL PURPOSES)
-    Returns the average jensen shannon divergence between pair-wise topics
-    by going through each row of the matrix
-    '''
-    n_topics = topics.shape[1]
-    doc_distance_list = []
-    for pair in combinations(range(n_topics), 2):
-        item1, item2 = pair
-        vector1 = dit.ScalarDistribution(topics[:, item1])
-        vector2 = dit.ScalarDistribution(topics[:, item2])
-        doc_distance_list.append(jensen_shannon_divergence([vector1, vector2]))
-    return doc_distance_list
-
-
-def fit_nmf(matrix, n_topics):
-    '''
-    INPUT
-         - matrix (tfidf) representation of the documents
-         - n_topics: number of topics to extract
-    OUTPUT
-         - W matrix: these are the documents
-         - H matrix: these are the latent topics
-         - nmf: this is the fit nmf object
-         - topic_label: list of topic labels
-    Returns the W matrix, the H matrix, the fit nmf object, and the
-    label for each of the topics
-    '''
-    topic_label = []
-    nmf = NMF(n_components=n_topics)
-    W = nmf.fit_transform(matrix)
-    H = nmf.components_
-    for document in W:
-        topic_label.append(np.argmax(document))
-    return W, H, nmf, topic_label
-
-
-def get_inter_nmf_topic_distance(H, topic_label, weighted=False):
-    '''
-    INPUT
-         - the H matrix generated by NMF
-         - weighted = true/false if the averages are weighted by how many
-           documents are in that topic
-         - topic_label: list of topic labels to get the weight of each document
-    OUTPUT
-         - avg_inter_topic_distance: float
-         - doc_distance_list: list
-    Returns the average inter topic distance by computing for the average
-    of the pairwise distances of all the topics AND the list from which
-    this average was generated
-    '''
-    # topic_weight_dict = Counter(topic_label)
-    n_topics = H.shape[0]
-    H = H/np.sum(H, axis=1).reshape(-1, 1)
-    doc_distance_list = []
-    for pair in combinations(range(n_topics), 2):
-        item1, item2 = pair
-        # doc_distance_list.append(cosine(H[item1], H[item2]))
-        # doc_distance_list.append(np.linalg.norm(H[item1]-H[item2]))
-        vector1 = dit.ScalarDistribution(H[item1])
-        vector2 = dit.ScalarDistribution(H[item2])
-        doc_distance_list.append(jensen_shannon_divergence([vector1, vector2]))
-    avg_inter_topic_distance = np.mean(doc_distance_list)
-    return avg_inter_topic_distance, doc_distance_list
-
-
-def explore_nmf_topic_range(n_min, n_max, matrix):
-    '''
-    INPUT
-         - n_min: the minimum number of topics to check
-         - n_max: the maximum number of topics to check
-         - matrix: the tfidf matrix
-    OUTPUT
-         - max_topic_count: int
-         - dist_list: list
-
-    Returns the max_topic_count with the best separation of topics
-    and the dist_list which has the average inter-topic distance for
-    each topic count specified
-    '''
-    dist_list = []
-    topic_range = range(n_min, n_max+1)
-    for n_topics in topic_range:
-        print('currently building NMF with {}'.format(n_topics))
-        W, H, nmf, topic_label = fit_nmf(matrix, n_topics)
-        print('computing inter_topic_distance for {}'.format(n_topics))
-        avg_itd, _ = get_inter_nmf_topic_distance(H, topic_label)
-        dist_list.append(avg_itd)
-    max_topic_count = topic_range[np.argmax(np.array(dist_list))]
-    return max_topic_count, dist_list, topic_range
-
-
-def plot_the_max_topic_count(max_topic_count, dist_list, topic_range):
-    '''
-    INPUT
-         - the dist_list from the explore_nmf_topic_range function
-    OUTPUT
-         - plots the inter topic distance and shows the
-    Returns nothing
-    '''
-    plt.plot(topic_range, dist_list, label='average inter topic distance')
-    plt.title('Topic Count to Choose is {}'.format(max_topic_count))
-    plt.xlabel('Number of Topics')
-    plt.ylabel('Average Inter-Topic Distance')
-    plt.axvline(x=max_topic_count, color='k', linestyle='--',
-                label='n_topics for max inter_topic_dist')
-    plt.legend(loc='best')
-    plt.show()
 
 
 def compute_for_doc_importance(tfidf, matrix, topic_label):
@@ -364,21 +213,6 @@ def compute_for_doc_importance(tfidf, matrix, topic_label):
                                                           topic_label))
     del word_df
     return igr_list, bag_of_words
-
-
-def explore_important_words(tfidf, n_words):
-    '''
-    INPUT
-         - tfidf: the tfidf object
-         - n_words: n number of words to retrieve per topic
-    OUTPUT
-         - print the top n_words in each topic
-
-    Returns none
-    '''
-    vocab = np.array(map(str, tfidf.get_feature_names()))
-    for row in H:
-        print(vocab[np.argsort(row)[-n_words:]])
 
 
 def compute_doc_importance_parallel(tfidf, matrix, topic_label):
@@ -439,8 +273,8 @@ def remove_nan_tweets_from_df(df):
     return df
 
 
-def get_most_importance_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
-                                                   topic_label, df):
+def get_most_important_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
+                                                  topic_label, df):
     '''
     INPUT
          - tfidf: this is the tfidf object
@@ -480,121 +314,6 @@ def get_most_importance_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
     pass
 
 
-def get_most_importance_tweets_per_topic(tfidf_matrix,
-                                         topic_label, df):
-    '''
-    INPUT
-         - tfidf_matrix: this is the tfidf matrix
-         - topic_label: this is a list that has the topic label for each doc
-         - df: this dataframe has all the tweets
-    OUTPUT
-
-    Returns the most important tweets per topic by getting the average tfidf
-    of the words in the sentence
-    '''
-    topic_label = np.array(topic_label)
-    ntweets = topic_label.shape[0]
-    tfidfsum = np.sum(tfidf_matrix, axis=1)
-    wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
-                                    arr=tfidf_matrix.todense())
-    avg_sent_imp = tfidfsum/wordcount.reshape(-1, 1)
-    avg_sent_imp = np.asarray(avg_sent_imp).flatten()
-    tweetarray = df.text.values
-    for i, unique_topic in enumerate(np.unique(topic_label)):
-        subset_tweet_array = tweetarray[topic_label == unique_topic]
-        subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
-        nsubtweets = subset_sent_importance.shape[0]
-        print('\n')
-        print('topic #{}'.format(i+1))
-        print(subset_tweet_array[np.argmax(subset_sent_importance)])
-        subset_percent = round(float(nsubtweets)/ntweets*100, 2)
-        print('{} percent of tweets are in this topic'.format(subset_percent))
-    pass
-
-
-def get_intra_topic_similarity_in_w_matrix(W, metric):
-    '''
-    INPUT
-         - W matrix from NMF
-    OUTPUT
-         - float: average jensen shannon divergence within topics
-
-    Returns the average intra-topic similarity using jensen shannon divergence
-    of a W matrix
-    '''
-    # W = W/np.sum(W, axis=1).reshape(-1, 1)
-    topic_labels = np.argmax(W, axis=1)
-    unique_topics = np.unique(topic_labels)
-    for unique_topic in unique_topics:
-        subset = W[topic_labels == unique_topic]
-        total = np.sum(np.tril(pairwise_distances(subset,
-                                                  metric=metric,
-                                                  n_jobs=-1)))
-        average = total/float(ncr(subset.shape[1], 2))
-        print(average)
-
-
-def check_runtime(n_topics, metric):
-    '''
-    INPUT
-         - n_topics
-         - metric
-    OUTPUT
-         - prints out the content and the time for n_topics taken from
-         a W matrix extracted via NMF and a distance metrics for pairwise
-         computations
-
-    Returns none
-    '''
-    start = time.time()
-    W, H, nmf, topic_label = fit_nmf(tfidf_matrix, n_topics)
-    get_intra_topic_similarity_in_w_matrix(W, metric)
-    print("distance computation time: ", time.time() - start)
-
-
-def jsd(x, y):
-    '''
-    INPUT
-         - x: np array distribution
-         - y: np array distribution
-    OUTPUT
-         - float
-    Returns the JS Divergence
-    taken from # @author: jonathanfriedman
-    as seen on http://stats.stackexchange.com/questions/29578/jensen-shannon\
-    -divergence-calculation-for-3-prob-distributions-is-this-ok
-    '''
-    warnings.filterwarnings("ignore", category=RuntimeWarning)
-    x = np.array(x)
-    y = np.array(y)
-    d1 = x*np.log2(2*x/(x+y))
-    d2 = y*np.log2(2*y/(x+y))
-    d1[np.isnan(d1)] = 0
-    d2[np.isnan(d2)] = 0
-    d = 0.5*np.sum(d1+d2)
-    return d
-
-
-def ncr(n, r):
-    '''
-    INPUT
-         - n, int
-         - r, int
-         (these are for n choose r)
-    OUTPUT
-         - int
-    Returns the computation of combinations n choose r
-    taken from http://stackoverflow.com/questions/4941753/is-\
-    there-a-math-ncr-function-in-python
-    '''
-    r = min(r, n-r)
-    if r == 0:
-        return 1
-    numer = reduce(op.mul, xrange(n, n-r, -1))
-    denom = reduce(op.mul, xrange(1, r+1))
-    return numer//denom
-
-
 def extract_tweets_from_dataframe(df):
     '''
     INPUT
@@ -607,8 +326,6 @@ def extract_tweets_from_dataframe(df):
     print('tokenizing tweets...')
     documents = [document for document in
                  df.text.values if type(document) == str]
-    # documents = [document for document in
-    #              df.text.values if len(document.split()) > 1]
     start = time.time()
     tokenized_tweets = multiprocess_tokenize_tweet(documents)
     print("tokenizing the tweets took: ", time.time() - start)
@@ -624,16 +341,12 @@ def extract_tweets_from_dataframe(df):
     H = pnmf.nmf.components_
     topic_label = np.apply_along_axis(func1d=np.argmax,
                                       axis=1, arr=W)
-    # W, H, nmf, topic_label = fit_nmf(tfidf_matrix, topic_count)
-    # print "extracted {} topics: ".format(topic_count), time.time() - start
     print("extracted {} topics: "
           .format(pnmf.topic_count), time.time() - start)
     print('fetching important tweets...')
     start = time.time()
-    # get_most_importance_tweets_per_topic(tfidf_matrix,
-    #                                      topic_label, df)
-    get_most_importance_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
-                                                   topic_label, df)
+    get_most_important_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
+                                                  topic_label, df)
     print("fetching took: ", time.time() - start)
     del W
     del H
@@ -654,12 +367,6 @@ def process_real_and_fake_tweets(df):
     realdf = df.query('pred == 0')
     print('there are {} fake tweets in this query'.format(fakedf.shape[0]))
     print('there are {} real tweets in this query'.format(realdf.shape[0]))
-    # faketopics = int(fakedf.shape[0]*.005)
-    # realtopics = int(realdf.shape[0]*.005)
-    # extract_tweets_from_dataframe(fakedf,
-    #                               20 if faketopics > 20 else faketopics)
-    # extract_tweets_from_dataframe(realdf,
-    #                               20 if realtopics > 20 else realtopics)
     if fakedf.shape[0] > 0:
         extract_tweets_from_dataframe(fakedf)
     del fakedf
@@ -668,12 +375,5 @@ def process_real_and_fake_tweets(df):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv('data/clintontweets.csv')
+    df = pd.read_csv('data/trumptweets.csv')
     process_real_and_fake_tweets(df)
-    # print('exploring the nmf topic range')
-    # start = time.time()
-    # max_topic_count, dist_list, \
-    #     topic_range = explore_nmf_topic_range(2, 20, tfidf_matrix)
-    # print "nmf exploration: ", time.time() - start
-    # plot_the_max_topic_count(max_topic_count, dist_list, topic_range)
-    # get_intra_topic_similarity_in_w_matrix(W, 'euclidean')
