@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
-from classification_model import *
-from process_loaded_data import *
+from classification_model import balance_classes, RandomUnderSampler
+from classification_model import train_test_split, RandomForestClassifier
+from classification_model import gridsearch, view_classification_report
+from classification_model import confusion_matrix, Eval, write_model_to_pkl
+from classification_model import view_feature_importances
+from process_loaded_data import check_if_many_relative_followers_to_friends
 from datetime import datetime
 from unidecode import unidecode
 from pymongo import MongoClient
@@ -38,7 +42,6 @@ def load_all_training_data():
              'screen_name',
              'utc_offset',
              'protected'], axis=1, inplace=True)
-    # df.fillna(-99999, inplace=True)
     return df
 
 
@@ -68,8 +71,6 @@ def get_most_recent_tweets_per_user():
     tweet recorded for that user_id
     '''
     tweetdf = pd.read_csv('data/training_tweets.csv')
-    # user_and_max_date = tweetdf[['user_id',
-    #                              'timestamp']].groupby('user_id').max()
     tweetdf.timestamp = pd.to_datetime(tweetdf.timestamp)
     index = tweetdf.groupby('user_id').apply(lambda x: np.argmax(x.timestamp))
     tweetdf = tweetdf.loc[index.values]
@@ -167,11 +168,6 @@ def feature_engineering(df):
          - processed dataframe
     Returns - features needed for the model
     '''
-    # df = df[['profile_use_background_image', 'geo_enabled', 'verified',
-    #          'followers_count', 'default_profile_image', 'listed_count',
-    #          'statuses_count', 'friends_count', 'favourites_count',
-    #          'favorite_count', 'num_hashtags', 'num_mentions',
-    #          'account_age', 'retweet_count', 'label_y']]
     df = check_if_many_relative_followers_to_friends(df)
     df['has_30_followers'] = \
         df.followers_count.apply(lambda x: 1 if x >= 30 else 0)
@@ -203,15 +199,6 @@ def get_and_process_mongo_tweets(dbname, collection):
         tweet_list.append(document)
     processed_tweets = np.array([process_tweet(tweet) for tweet in tweet_list])
     tweet_history = processed_tweets[:, :19].astype(float)
-    # tweets = processed_tweets[:, 19:]
-    # tweet_behavior = \
-    #     tweet_history/tweet_history[:, 13].reshape(-1, 1)
-    # tweet_ensemble = np.hstack((tweet_history,
-    #                             tweet_behavior))
-    # columns = ['id', 'text', 'screen_name']
-    # tweets = pd.DataFrame(tweets, columns=columns)
-    # tweets.text = tweets.text.apply(unidecode)
-    # return tweet_ensemble, tweets
     return tweet_history
 
 
@@ -501,12 +488,9 @@ if __name__ == "__main__":
     view_classification_report(modelb, X_train_bwr, y_train_b)
     print(confusion_matrix(y_train_b, modelb.predict(X_train_bwr)))
     print("this is the model performance on the test data\n")
-    view_classification_report(modelb,
-                               X_test_b*weights/X_test_b[:,
-                                                         13].reshape(-1,
-                                                                     1),
-                               y_test_b)
-    print(confusion_matrix(y_test_b, modelb.predict(X_test_b*weights)))
+    X_test_br = X_test_b * weights/X_test_b[:, 13].reshape(-1, 1)
+    view_classification_report(modelb, X_test_br, y_test_b)
+    print(confusion_matrix(y_test_b, modelb.predict(X_test_br)))
     # print("this is the model performance on different split ratios\n")
     # # etcb = Eval(model, .05, .5, .05, 100)
     # # etcb.evaluate_data(X_test_b*weights, y_test_b)
