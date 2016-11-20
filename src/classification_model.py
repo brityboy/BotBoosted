@@ -49,32 +49,6 @@ def balance_classes(sm, X, y):
     return X, y
 
 
-def cluster_based_oversampling_with_smote(metric, X_train, y_train, sm):
-    '''
-    INPUT
-         - metric: this is the kind of distance formula DBSCAN will use
-         - X_train: 2d array of features
-         - y_train: 1d array of targets
-         - sm: imblearn oversampling/undersampling method
-    OUTPUT
-         - X_train (stratified and balanced feature set)
-         - y_train (stratified and balanced feature set)
-    Clusters X_train using dbscan with jaccard similarity, then oversamples
-    or undersamples
-    '''
-    db = DBSCAN(metric=metric)
-    db.fit(X_train)
-    X_list = []
-    y_list = []
-    for cluster in np.unique(db.labels_):
-        X_samp = X_train[db.labels_ == cluster]
-        y_samp = y_train[db.labels_ == cluster]
-        X_samp, y_samp = balance_classes(sm, X_train, y_train)
-        X_list.append(X_samp)
-        y_list.append(y_samp)
-    return np.vstack(X_list), np.hstack(y_list)
-
-
 def view_classification_report(model, X_test, y_test):
     '''
     INPUT
