@@ -191,5 +191,5 @@ def botboosted_v2(searchQuery):
 
 
 if __name__ == "__main__":
-    # botboosted_v2('Mocha Uson')
-    botboosted_demonstration_v2('clintonmillion', 'topictweets')
+    botboosted_v2('#dayaangmatuwid')
+    # botboosted_demonstration_v2('clintonmillion', 'topictweets')

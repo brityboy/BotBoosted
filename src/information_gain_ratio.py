@@ -50,24 +50,6 @@ def entropy(y):
     return -1 * ent
 
 
-def gini(y):
-    '''
-    INPUT:
-        - y: 1d numpy array
-    OUTPUT:
-        - float
-
-    Return the gini impurity of the array y.
-    '''
-    unique = np.unique(y)
-    count = Counter(y)
-    ent = 0
-    for val in unique:
-        p = count[val]/float(len(y))
-        ent += p**2
-    return 1 - ent
-
-
 def make_split(X, y, split_value):
     '''
     INPUT:
@@ -142,20 +124,37 @@ def determine_optimal_continuous_split_values(attribute, df, y):
     '''
     attribute_value_array = df[attribute].values
     split_values = np.unique(sorted(attribute_value_array))[:-1]
-    info_gain_list = []
-    info_gain = 0
-    # possible_splits = list(combinations(split_values, 1)) + \
-    #     list(combinations(split_values, 2)) + \
-    #     list(combinations(split_values, 3))
-    # possible_splits = list(combinations(split_values, 1)) + \
-    #     list(combinations(split_values, 2))
     possible_splits = list(combinations(split_values, 1))
+    max_info_gain = 0
     for split in possible_splits:
         X_list, y_list = make_multiple_split(attribute_value_array, y, split)
-        info_gain = multiple_information_gain(y, y_list, entropy)
-        info_gain_list.append(info_gain)
-        info_gain_array = np.array(info_gain_list)
-        max_split = possible_splits[np.argmax(info_gain_array)]
+        if multiple_information_gain(y, y_list, entropy) > max_info_gain:
+            max_info_gain = multiple_information_gain(y, y_list, entropy)
+            max_split = split
+    return max_split
+
+
+def determine_optimal_continuous_split_values(attribute, df, y):
+    '''
+    INPUT
+         - attribute: str, feature to check
+         - df: pandas dataframe of features
+         - y: 1d array, target
+    OUTPUT
+         - max_split: tuple of best values to split on
+         - info_gain_array: numpy array of all information gains
+         - possible_splits: list of all possible split values
+    Returns tuple of split values that optimize information gain (min 1 max 3)
+    '''
+    attribute_value_array = df[attribute].values
+    split_values = np.unique(sorted(attribute_value_array))[:-1]
+    possible_splits = list(combinations(split_values, 1))
+    max_info_gain = 0
+    for split in possible_splits:
+        X_list, y_list = make_multiple_split(attribute_value_array, y, split)
+        if multiple_information_gain(y, y_list, entropy) > max_info_gain:
+            max_info_gain = multiple_information_gain(y, y_list, entropy)
+            max_split = split
     return max_split
 
 
@@ -350,6 +349,22 @@ def information_gain_ratio_continuous(attribute, df, y):
     return ig/pig
 
 
+# def information_gain_ratio_continuous_1d(X, y):
+#     '''
+#     INPUT
+#          - X: continuous feature, 1d array
+#          - y: 1d array, target
+#     OUTPUT
+#          - float
+#     Returns the information gain ratio accdg to Quinlan's C4.5
+#     '''
+#     max_split = determine_optimal_continuous_split_values(attribute, df, y)
+#     X_list, y_list = make_multiple_split(df[attribute].values, y, max_split)
+#     ig = multiple_information_gain(y, y_list, entropy)
+#     pig = potential_attribute_information_gain_continuous(X_list)
+#     return ig/pig
+
+
 def information_gain_ratio(attribute, df, y):
     '''
     INPUT
@@ -423,3 +438,4 @@ if __name__ == "__main__":
         print(attribute, information_gain_ratio_categorical(attribute, df, y))
     print('\ntest information gain for temperature')
     print(information_gain_ratio_continuous('temperature', df, y))
+    # print(information_gain_ratio_continuous_1d(df['temperature'].values, y))

@@ -10,6 +10,7 @@ from unidecode import unidecode
 import multiprocessing as mp
 import time
 from paretonmf import ParetoNMF
+from sklearn.ensemble import RandomForestClassifier
 
 
 def fix_the_sequence_of_repeated_characters(word):
@@ -178,30 +179,34 @@ def tfidf_vectorizer(documents):
     return tfidf, tfidf_matrix
 
 
-def compute_for_doc_importance(tfidf, matrix, topic_label):
+def compute_for_word_importance(tfidf_matrix, topic_label):
     '''
     INPUT
-         - matrix - the sparse matrix (document, word) information
-         - topic_label - the topic into which this document falls
+         - tfidf_matrix - sparse matrix, the tfidf matrix
+           of the tokenized tweets
+         - topic_label - the topic label assigned
     OUTPUT
-         - igr_list - list
 
-    Computes for the information gain ratio of each word with the topic as
-    the label given the following procedure, bag_of_words
-
-    this is the sequential method for doing this
+    Returns the importance of each word as its feature importance from a
+    random forest
     '''
-    igr_list = []
-    bag_of_words = map(unidecode, tfidf.get_feature_names())
-    n_words = len(bag_of_words)
-    topic_label = np.array(map(str, topic_label))
-    word_df = pd.DataFrame(matrix.todense(), columns=bag_of_words)
-    for i, word in enumerate(word_df):
-        print('we are on word {} out of {} words'.format(i, n_words))
-        igr_list.append(information_gain_ratio_continuous(word, word_df,
-                                                          topic_label))
-    del word_df
-    return igr_list, bag_of_words
+    model = RandomForestClassifier(n_jobs=-1)
+    model.fit(tfidf_matrix.todense(), topic_label)
+    return model.feature_importances_
+
+
+def multiply_tfidf_matrix_by_word_importance(tfidf_matrix, word_importance):
+    '''
+    INPUT
+         - tfidf_matrix: sparse matrix of the tokenized tweets
+         - word_importance: 1d array of the computed importance of the words
+         in determining the topics
+    OUTPUT
+    '''
+    sentimportnace = tfidf_matrix.todense() * word_importance.reshape(-1, 1)
+    wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
+                                    arr=tfidf_matrix.todense())
+    sentimportance/wordcount.reshape(-1, 1)
 
 
 def get_most_important_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
@@ -225,6 +230,49 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
     wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
                                     arr=tfidf_matrix.todense())
     avg_sent_imp = tfidfsum/wordcount.reshape(-1, 1)
+    avg_sent_imp = np.asarray(avg_sent_imp).flatten()
+    tweetarray = df.text.values
+    for i, unique_topic in enumerate(np.unique(topic_label)):
+        subset_tweet_array = tweetarray[topic_label == unique_topic]
+        subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
+        nsubtweets = subset_sent_importance.shape[0]
+        print('\n')
+        print('topic #{}'.format(i+1))
+        print('this is the exemplary tweet from this topic')
+        # print(subset_tweet_array[np.argmax(subset_sent_importance)])
+        print('these are 5 unique example tweets from this topic')
+        print(np.unique(subset_tweet_array
+                        [np.argsort(subset_sent_importance)[::-1]])[:5])
+        print('\n')
+        print('these are the top words from this topic')
+        print(bag_of_words[np.argsort(H[i])[::-1]][:10])
+        subset_percent = round(float(nsubtweets)/ntweets*100, 2)
+        print('{} percent of tweets are in this topic'.format(subset_percent))
+    pass
+
+
+def get_most_important_tweets_and_words_per_topic_wi(tfidf, H, tfidf_matrix,
+                                                     topic_label,
+                                                     word_importance, df):
+    '''
+    INPUT
+         - tfidf: this is the tfidf object
+         - H: matrix, this is the topic matrix from NMF
+         - tfidf_matrix: this is the tfidf matrix
+         - topic_label: this is a list that has the topic label for each doc
+         - df: this dataframe has all the tweets
+    OUTPUT
+
+    Returns the most important tweets per topic by getting the average tfidf
+    of the words in the sentence
+    '''
+    bag_of_words = np.array(map(unidecode, tfidf.get_feature_names()))
+    topic_label = np.array(topic_label)
+    ntweets = topic_label.shape[0]
+    sentimportance = tfidf_matrix.todense() * word_importance.reshape(-1, 1)
+    wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
+                                    arr=tfidf_matrix.todense())
+    avg_sent_imp = sentimportance/wordcount.reshape(-1, 1)
     avg_sent_imp = np.asarray(avg_sent_imp).flatten()
     tweetarray = df.text.values
     for i, unique_topic in enumerate(np.unique(topic_label)):
@@ -275,10 +323,17 @@ def extract_tweets_from_dataframe(df):
                                       axis=1, arr=W)
     print("extracted {} topics: "
           .format(pnmf.topic_count), time.time() - start)
+    print('determining important words...')
+    start = time.time()
+    word_importance = compute_for_word_importance(tfidf_matrix, topic_label)
+    print("word importance computations took: ", time.time() - start)
     print('fetching important tweets...')
     start = time.time()
     get_most_important_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
                                                   topic_label, df)
+    get_most_important_tweets_and_words_per_topic_wi(tfidf, H, tfidf_matrix,
+                                                     topic_label,
+                                                     word_importance, df)
     print("fetching took: ", time.time() - start)
     del W
     del H
@@ -308,24 +363,6 @@ def process_real_and_fake_tweets(df):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv('data/trumptweets.csv')
-    # process_real_and_fake_tweets(df)
-    documents = [document for document in
-                 df.text.values if type(document) == str]
-    start = time.time()
-    tokenized_tweets = multiprocess_tokenize_tweet(documents)
-    print("tokenizing the tweets took: ", time.time() - start)
-    print('creating the tfidf_matrix...')
-    start = time.time()
-    tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
-    print("vectorizing took: ", time.time() - start)
-    print('extracting topics...')
-    start = time.time()
-    pnmf = ParetoNMF(noise_pct=.20, step=1, pnmf_verbose=True)
-    pnmf.evaluate(tfidf_matrix)
-    W = pnmf.nmf.transform(tfidf_matrix)
-    H = pnmf.nmf.components_
-    topic_label = np.apply_along_axis(func1d=np.argmax,
-                                      axis=1, arr=W)
-    print("extracted {} topics: "
-          .format(pnmf.topic_count), time.time() - start)
+    df = pd.read_csv('data/clintontweets.csv')
+    process_real_and_fake_tweets(df)
+    print('tokenizing tweets...')
