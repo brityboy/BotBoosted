@@ -212,17 +212,17 @@ class ParetoNMF(object):
             if self._stopping_condition():
                 if self.pnmf_verbose:
                     print('heuristic topic count is {}'
-                          .format(self.topic_count))
-                    # self.topic_count = self.topic_count - self.step
-                    # nmf = NMF(n_components=self.topic_count, init=self.init,
-                    #           solver=self.solver, tol=self.tol, max_iter=self.max_iter,
-                    #           random_state=self.random_state, alpha=self.alpha,
-                    #           l1_ratio=self.l1_ratio, verbose=self.verbose,
-                    #           shuffle=self.shuffle, nls_max_iter=self.nls_max_iter,
-                    #           sparseness=self.sparseness, beta=self.beta,
-                    #           eta = self.eta)
-                    # nmf.fit(matrix)
-                    # self.nmf = nmf
+                          .format(self.topic_count - self.step))
+                    self.topic_count = self.topic_count - self.step
+                    nmf = NMF(n_components=self.topic_count, init=self.init,
+                              solver=self.solver, tol=self.tol, max_iter=self.max_iter,
+                              random_state=self.random_state, alpha=self.alpha,
+                              l1_ratio=self.l1_ratio, verbose=self.verbose,
+                              shuffle=self.shuffle, nls_max_iter=self.nls_max_iter,
+                              sparseness=self.sparseness, beta=self.beta,
+                              eta = self.eta)
+                    nmf.fit(matrix)
+                    self.nmf = nmf
                 return self.topic_count
 
     def _stopping_condition(self):
