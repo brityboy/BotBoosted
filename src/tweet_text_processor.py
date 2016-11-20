@@ -572,37 +572,6 @@ def ncr(n, r):
     return numer//denom
 
 
-# def extract_tweets_from_dataframe(df, topic_count):
-#     '''
-#     INPUT
-#          - df - dataframe
-#          - topic_count - int, number of topics to extract
-#     OUTPUT
-#          - prints the top tweets from a dataframe given the topic-count
-#
-#     Return nothing
-#     '''
-#     print('tokenizing tweets...')
-#     documents = [document for document in
-#                  df.text.values if type(document) == str]
-#     start = time.time()
-#     tokenized_tweets = multiprocess_tokenize_tweet(documents)
-#     print "tokenizing the tweets took: ", time.time() - start
-#     print('creating the tfidf_matrix...')
-#     start = time.time()
-#     tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
-#     print "vectorizing took: ", time.time() - start
-#     print('extracting {} topics...'.format(topic_count))
-#     start = time.time()
-#     W, H, nmf, topic_label = fit_nmf(tfidf_matrix, topic_count)
-#     print "extracted {} topics: ".format(topic_count), time.time() - start
-#     print('fetching important tweets...')
-#     start = time.time()
-#     get_most_importance_tweets_per_topic(tfidf_matrix,
-#                                          topic_label, df)
-#     print "fetching took: ", time.time() - start
-
-
 def extract_tweets_from_dataframe(df):
     '''
     INPUT
@@ -643,7 +612,9 @@ def extract_tweets_from_dataframe(df):
     get_most_importance_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
                                                    topic_label, df)
     print("fetching took: ", time.time() - start)
-
+    del W
+    del H
+    del tfidf
 
 def process_real_and_fake_tweets(df):
     '''
@@ -668,6 +639,7 @@ def process_real_and_fake_tweets(df):
     #                               20 if realtopics > 20 else realtopics)
     if fakedf.shape[0] > 0:
         extract_tweets_from_dataframe(fakedf)
+    del fakedf
     if realdf.shape[0] > 0:
         extract_tweets_from_dataframe(realdf)
 
