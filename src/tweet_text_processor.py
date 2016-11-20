@@ -166,6 +166,28 @@ def word_count_vectorizer(documents):
     return vect, word_counts_matrix
 
 
+def replace_infrequent_words_with_tkn(tokenized_tweets, n_words):
+    '''
+    INPUT
+         - tokenized_tweets - list of tokenized tweets that went through
+         the tweet tokenizer function
+         - n_words - word count frequency cut off such that if frequency
+         is n_words and below, then the word will be replaced
+    OUTPUT
+         - list of tokenized tweets where words that occur n_words times or less
+         are replaced with the word '_unk_'
+    Returns tokenized_tweets, a list of cleaned up tweets
+    '''
+    processed_tweets = []
+    string_tweets = ' '.join(tokenized_tweets)
+    word_count_dict = Counter(string_tweets.split())
+    infreq_word_dict = \
+        {token: freq for (token, freq) in word_count_dict.items() if freq <= 4}
+    infreq_words = set(infreq_word_dict.keys())
+    for tweet in tokenized_tweets:
+        processed_tweets.append(' '.join(['_tkn_' if token in infreq_words else token for token in tweet.split()]))
+    return processed_tweets
+
 def tfidf_vectorizer(documents):
     '''
     INPUT
@@ -176,6 +198,7 @@ def tfidf_vectorizer(documents):
 
     Processes the documents corpus using a tfidf vectorizer
     '''
+    documents = replace_infrequent_words_with_tkn(documents, 4)
     tfidf = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
     tfidf_matrix = tfidf.fit_transform(documents)
     return tfidf, tfidf_matrix
@@ -645,7 +668,7 @@ def process_real_and_fake_tweets(df):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv('data/trumptweets.csv')
+    df = pd.read_csv('data/clintontweets.csv')
     process_real_and_fake_tweets(df)
     # print('exploring the nmf topic range')
     # start = time.time()
