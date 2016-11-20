@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-from prediction_model import *
 from sklearn.cross_validation import train_test_split
 from sklearn.metrics import precision_score, recall_score, confusion_matrix
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
+import dill as pickle
 
 
 class EvalTestCVBS(object):
@@ -153,8 +153,8 @@ if __name__ == "__main__":
     y = y.values
     X = df.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
-    # model = RandomForestClassifier(n_jobs=-1)
-    # model.fit(X_train, y_train)
+    model = RandomForestClassifier(n_jobs=-1)
+    model.fit(X_train, y_train)
     etcb = EvalTestCVBS(model, .05, .5, .05, 10)
     etcb.evaluate_data(X_test, y_test)
     etcb.plot_performance()
