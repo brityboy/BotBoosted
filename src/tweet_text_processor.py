@@ -305,5 +305,5 @@ def process_real_and_fake_tweets(df):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv('data/clintontweets.csv')
-    process_real_and_fake_tweets(df)
+    df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
+    # process_real_and_fake_tweets(df)
