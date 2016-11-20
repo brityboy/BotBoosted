@@ -5,7 +5,7 @@ import numpy as np
 from tweet_text_processor import split_list
 import multiprocessing as mp
 import time
-import pandas as pd
+# import pandas as pd
 from datetime import datetime
 
 
@@ -162,8 +162,9 @@ if __name__ == "__main__":
     # print(tweetarray)
     start = time.time()
     # tweets_for_prediction = multiprocess_process_tweet(tweet_list)
-    # processed_tweets = np.array([process_tweet_v2(tweet) for tweet in tweet_list])
-    for i, tweet in enumerate(tweet_list):
-        print i
-        process_tweet_v2(tweet)
-    print("process tweets tweets: ", time.time() - start)
+    processed_tweets = np.array([process_tweet_v2(tweet)
+                                 for tweet in tweet_list])
+    # for i, tweet in enumerate(tweet_list):
+    #     print i
+    #     process_tweet_v2(tweet)
+    # print("process tweets tweets: ", time.time() - start)
