@@ -1,5 +1,4 @@
 import time
-import dill as pickle
 from prediction_model import load_pickled_model
 from prediction_model import load_processed_csv_for_predictions
 from prediction_model import create_dictionary_with_id_and_predictions
@@ -97,7 +96,7 @@ def botboosted_demonstration(searchQuery):
     print("entire thing took: ", time.time() - totalstart)
 
 
-def botboosted_demonstration_v2(dbname, collection):
+def botboosted_demonstration_v2(dbname, collection, verbose=True):
     '''
     INPUT
          - searchQuery - string
@@ -106,32 +105,41 @@ def botboosted_demonstration_v2(dbname, collection):
     Returns none
     '''
     client = MongoClient()
-    totalstart = time.time()
-    print('loading model...')
-    start = time.time()
-    history_model_v2 = load_pickled_model('models/account_history_rf_v2_model.pkl')
-    behavior_model_v2 = load_pickled_model('models/behavior_rate_rf_v2_model.pkl')
-    ensemble_model_v2 = load_pickled_model('models/ensemble_rf_v2_model.pkl')
-    print("loading model took: ", time.time() - start)
-    print('getting and processing tweets...')
-    start = time.time()
+    if verbose:
+        totalstart = time.time()
+        print('loading model...')
+        start = time.time()
+    # history_model_v2 = \
+    #     load_pickled_model('models/account_history_rf_v2_model.pkl')
+    # behavior_model_v2 = \
+    #     load_pickled_model('models/behavior_rate_rf_v2_model.pkl')
+    # ensemble_model_v2 = \
+    #     load_pickled_model('models/ensemble_rf_v2_model.pkl')
+    if verbose:
+        print("loading model took: ", time.time() - start)
+        print('getting and processing tweets...')
+        start = time.time()
     tweet_list = []
     db = client[dbname]
     tab = db[collection].find()
     for document in tab:
         tweet_list.append(document)
-    print("loading and processing tweet data took: ", time.time() - start)
-    print('making predictions...')
-    start = time.time()
+    if verbose:
+        print("loading and processing tweet data took: ", time.time() - start)
+        print('making predictions...')
+        start = time.time()
     predicted_tweets = make_lightweight_predictions_v2(tweet_list)
-    del history_model_v2
-    del behavior_model_v2
-    del ensemble_model_v2
-    del tweet_list
-    print("making predictions took: ", time.time() - start)
+    predicted_tweets.to_csv('data/clinton_predicted_tweets_v2.csv')
+    # del history_model_v2
+    # del behavior_model_v2
+    # del ensemble_model_v2
+    if verbose:
+        del tweet_list
+        print("making predictions took: ", time.time() - start)
     process_real_and_fake_tweets(predicted_tweets)
-    print('\n')
-    print("entire thing took: ", time.time() - totalstart)
+    if verbose:
+        print('\n')
+        print("entire thing took: ", time.time() - totalstart)
 
 
 def botboosted(searchQuery):
@@ -145,9 +153,9 @@ def botboosted(searchQuery):
     totalstart = time.time()
     print('loading model...')
     start = time.time()
-    history_model = load_pickled_model('models/account_history_rf_model.pkl')
-    behavior_model = load_pickled_model('models/behavior_rate_rf_model.pkl')
-    ensemble_model = load_pickled_model('models/ensemble_rf_model.pkl')
+    # history_model = load_pickled_model('models/account_history_rf_model.pkl')
+    # behavior_model = load_pickled_model('models/behavior_rate_rf_model.pkl')
+    # ensemble_model = load_pickled_model('models/ensemble_rf_model.pkl')
     print("loading model took: ", time.time() - start)
     print('getting and processing tweets...')
     start = time.time()
@@ -162,7 +170,7 @@ def botboosted(searchQuery):
     print("entire thing took: ", time.time() - totalstart)
 
 
-def botboosted_v2(searchQuery):
+def botboosted_v2(searchQuery, verbose=False):
     '''
     INPUT
          - searchQuery - string
@@ -170,26 +178,34 @@ def botboosted_v2(searchQuery):
          - entire pipeline
     Returns none
     '''
-    totalstart = time.time()
-    print('loading model...')
-    start = time.time()
-    history_model_v2 = load_pickled_model('models/account_history_rf_v2_model.pkl')
-    behavior_model_v2 = load_pickled_model('models/behavior_rate_rf_v2_model.pkl')
-    ensemble_model_v2 = load_pickled_model('models/ensemble_rf_v2_model.pkl')
-    print("loading model took: ", time.time() - start)
-    print('getting and processing tweets...')
-    start = time.time()
+    if verbose:
+        totalstart = time.time()
+        print('loading model...')
+        start = time.time()
+    # history_model_v2 = \
+    #     load_pickled_model('models/account_history_rf_v2_model.pkl')
+    # behavior_model_v2 = \
+    #     load_pickled_model('models/behavior_rate_rf_v2_model.pkl')
+    # ensemble_model_v2 = \
+    #     load_pickled_model('models/ensemble_rf_v2_model.pkl')
+    if verbose:
+        print("loading model took: ", time.time() - start)
+        print('getting and processing tweets...')
+        start = time.time()
     tweet_list = download_tweets_given_search_query(searchQuery)
-    print("loading and processing tweet data took: ", time.time() - start)
-    print('making predictions...')
-    start = time.time()
+    if verbose:
+        print("loading and processing tweet data took: ", time.time() - start)
+        print('making predictions...')
+        start = time.time()
     predicted_tweets = make_lightweight_predictions_v2(tweet_list)
-    print("making predictions took: ", time.time() - start)
+    if verbose:
+        print("making predictions took: ", time.time() - start)
     process_real_and_fake_tweets(predicted_tweets)
-    print('\n')
-    print("entire thing took: ", time.time() - totalstart)
+    if verbose:
+        print('\n')
+        print("entire thing took: ", time.time() - totalstart)
 
 
 if __name__ == "__main__":
-    botboosted_v2('#dayaangmatuwid')
-    # botboosted_demonstration_v2('clintonmillion', 'topictweets')
+    # botboosted_v2("hillary clinton email", verbose=True)
+    botboosted_demonstration_v2('clintonmillion', 'topictweets', verbose=True)
