@@ -5,7 +5,6 @@ import re
 import string
 from sklearn.feature_extraction.text import TfidfVectorizer
 from collections import Counter
-from information_gain_ratio import *
 from unidecode import unidecode
 import multiprocessing as mp
 import time
@@ -195,60 +194,46 @@ def compute_for_word_importance(tfidf_matrix, topic_label):
     return model.feature_importances_
 
 
-def multiply_tfidf_matrix_by_word_importance(tfidf_matrix, word_importance):
-    '''
-    INPUT
-         - tfidf_matrix: sparse matrix of the tokenized tweets
-         - word_importance: 1d array of the computed importance of the words
-         in determining the topics
-    OUTPUT
-    '''
-    sentimportnace = tfidf_matrix.todense() * word_importance.reshape(-1, 1)
-    wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
-                                    arr=tfidf_matrix.todense())
-    sentimportance/wordcount.reshape(-1, 1)
-
-
-def get_most_important_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
-                                                  topic_label, df):
-    '''
-    INPUT
-         - tfidf: this is the tfidf object
-         - H: matrix, this is the topic matrix from NMF
-         - tfidf_matrix: this is the tfidf matrix
-         - topic_label: this is a list that has the topic label for each doc
-         - df: this dataframe has all the tweets
-    OUTPUT
-
-    Returns the most important tweets per topic by getting the average tfidf
-    of the words in the sentence
-    '''
-    bag_of_words = np.array(map(unidecode, tfidf.get_feature_names()))
-    topic_label = np.array(topic_label)
-    ntweets = topic_label.shape[0]
-    tfidfsum = np.sum(tfidf_matrix, axis=1)
-    wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
-                                    arr=tfidf_matrix.todense())
-    avg_sent_imp = tfidfsum/wordcount.reshape(-1, 1)
-    avg_sent_imp = np.asarray(avg_sent_imp).flatten()
-    tweetarray = df.text.values
-    for i, unique_topic in enumerate(np.unique(topic_label)):
-        subset_tweet_array = tweetarray[topic_label == unique_topic]
-        subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
-        nsubtweets = subset_sent_importance.shape[0]
-        print('\n')
-        print('topic #{}'.format(i+1))
-        print('this is the exemplary tweet from this topic')
-        # print(subset_tweet_array[np.argmax(subset_sent_importance)])
-        print('these are 5 unique example tweets from this topic')
-        print(np.unique(subset_tweet_array
-                        [np.argsort(subset_sent_importance)[::-1]])[:5])
-        print('\n')
-        print('these are the top words from this topic')
-        print(bag_of_words[np.argsort(H[i])[::-1]][:10])
-        subset_percent = round(float(nsubtweets)/ntweets*100, 2)
-        print('{} percent of tweets are in this topic'.format(subset_percent))
-    pass
+# def get_most_important_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
+#                                                   topic_label, df):
+#     '''
+#     INPUT
+#          - tfidf: this is the tfidf object
+#          - H: matrix, this is the topic matrix from NMF
+#          - tfidf_matrix: this is the tfidf matrix
+#          - topic_label: this is a list that has the topic label for each doc
+#          - df: this dataframe has all the tweets
+#     OUTPUT
+#
+#     Returns the most important tweets per topic by getting the average tfidf
+#     of the words in the sentence
+#     '''
+#     bag_of_words = np.array(map(unidecode, tfidf.get_feature_names()))
+#     topic_label = np.array(topic_label)
+#     ntweets = topic_label.shape[0]
+#     tfidfsum = np.sum(tfidf_matrix, axis=1)
+#     wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
+#                                     arr=tfidf_matrix.todense())
+#     avg_sent_imp = tfidfsum/wordcount.reshape(-1, 1)
+#     avg_sent_imp = np.asarray(avg_sent_imp).flatten()
+#     tweetarray = df.text.values
+#     for i, unique_topic in enumerate(np.unique(topic_label)):
+#         subset_tweet_array = tweetarray[topic_label == unique_topic]
+#         subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
+#         nsubtweets = subset_sent_importance.shape[0]
+#         print('\n')
+#         print('topic #{}'.format(i+1))
+#         print('this is the exemplary tweet from this topic')
+#         print(subset_tweet_array[np.argmax(subset_sent_importance)])
+#         print('these are 5 unique example tweets from this topic')
+#         # print(subset_tweet_array[np.argsort(subset_sent_importance)[::-1]])[:5]
+#         print('\n')
+#         print('these are the top words from this topic')
+#         print(bag_of_words[np.argsort(H[i])[::-1]][:10])
+#         subset_percent = round(float(nsubtweets)/ntweets*100, 2)
+#         print('{} percent of tweets are in this topic'.format(subset_percent))
+#     pass
+#     print('this was NOT done with word importance analysis')
 
 
 def get_most_important_tweets_and_words_per_topic_wi(tfidf, H, tfidf_matrix,
@@ -282,16 +267,16 @@ def get_most_important_tweets_and_words_per_topic_wi(tfidf, H, tfidf_matrix,
         print('\n')
         print('topic #{}'.format(i+1))
         print('this is the exemplary tweet from this topic')
-        # print(subset_tweet_array[np.argmax(subset_sent_importance)])
-        print('these are 5 unique example tweets from this topic')
-        print(np.unique(subset_tweet_array
-                        [np.argsort(subset_sent_importance)[::-1]])[:5])
+        print(subset_tweet_array[np.argmax(subset_sent_importance)])
+        # print('these are 5 unique example tweets from this topic')
+        # print(subset_tweet_array[np.argsort(subset_sent_importance)[::-1]])[:5]
         print('\n')
         print('these are the top words from this topic')
-        print(bag_of_words[np.argsort(H[i])[::-1]][:10])
+        print(bag_of_words[np.argsort(word_importance*H[i])[::-1]][:10])
         subset_percent = round(float(nsubtweets)/ntweets*100, 2)
         print('{} percent of tweets are in this topic'.format(subset_percent))
     pass
+    print('this was done with word importance analysis')
 
 
 def extract_tweets_from_dataframe(df):
@@ -329,8 +314,6 @@ def extract_tweets_from_dataframe(df):
     print("word importance computations took: ", time.time() - start)
     print('fetching important tweets...')
     start = time.time()
-    get_most_important_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
-                                                  topic_label, df)
     get_most_important_tweets_and_words_per_topic_wi(tfidf, H, tfidf_matrix,
                                                      topic_label,
                                                      word_importance, df)
@@ -338,6 +321,7 @@ def extract_tweets_from_dataframe(df):
     del W
     del H
     del tfidf
+    del pnmf
 
 
 def process_real_and_fake_tweets(df):
@@ -365,4 +349,3 @@ def process_real_and_fake_tweets(df):
 if __name__ == "__main__":
     df = pd.read_csv('data/clintontweets.csv')
     process_real_and_fake_tweets(df)
-    print('tokenizing tweets...')
