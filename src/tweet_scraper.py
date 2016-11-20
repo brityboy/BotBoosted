@@ -33,7 +33,7 @@ def access_credentials():
 
 
 def download_tweets_to_list(searchQuery, tweetsPerQry,
-                            maxTweets, api):
+                            maxTweets, api, verbose=False):
     '''
     this function downloads tweet info into two lists
     INPUT
@@ -57,7 +57,8 @@ def download_tweets_to_list(searchQuery, tweetsPerQry,
     sinceId = None
     max_id = -1L
     tweetCount = 0
-    print("Downloading max {0} tweets".format(maxTweets))
+    if verbose:
+        print("Downloading max {0} tweets".format(maxTweets))
     while tweetCount < maxTweets:
         try:
             if (max_id <= 0):
@@ -79,25 +80,30 @@ def download_tweets_to_list(searchQuery, tweetsPerQry,
                                             max_id=str(max_id - 1),
                                             since_id=sinceId)
             if not new_tweets:
-                print("No more tweets found")
+                if verbose:
+                    print("No more tweets found")
                 break
             for tweet in new_tweets:
                 tweet_list.append(tweet._json)
                 # tweet_array_list.append(process_tweet(tweet_.json))
             tweetCount += len(new_tweets)
-            print("Downloaded {0} tweets".format(tweetCount))
+            if verbose:
+                print("Downloaded {0} tweets".format(tweetCount))
             src = '/search/tweets'
             rem = 'remaining'
-            print api.rate_limit_status()['resources']['search'][src][rem]
+            if verbose:
+                print api.rate_limit_status()['resources']['search'][src][rem]
             max_id = new_tweets[-1].id
         except:
-            print("some error : " + str(e))
-            break
+            if verbose:
+                print("some error : " + str(e))
+            return tweet_list
+    # if verbose:
     print("Downloaded {0} tweets".format(tweetCount))
     return tweet_list  # , tweet_array_list
 
 
-def download_tweets_given_search_query(searchQuery):
+def download_tweets_given_search_query(searchQuery, verbose=False):
     '''
     INPUT
          - a searchQuery
@@ -115,8 +121,9 @@ def download_tweets_given_search_query(searchQuery):
     tweet_list = download_tweets_to_list(searchQuery,
                                          tweetsPerQry,
                                          maxTweets,
-                                         api)
+                                         api, verbose=verbose)
     return tweet_list
 
 if __name__ == "__main__":
-    tweet_list = download_tweets_given_search_query('marcos burial')
+    tweet_list = download_tweets_given_search_query('marcos burial',
+                                                    verbose=False)
