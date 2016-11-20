@@ -251,9 +251,9 @@ class ParetoNMF(object):
 
 if __name__ == "__main__":
     df = pd.read_csv('data/trumptweets.csv')
-    documents = [document for document in
-                 df.text.values if type(document) == str]
-    tokenized_tweets = ttp.multiprocess_tokenize_tweet(documents)
-    tfidf, tfidf_matrix = ttp.tfidf_vectorizer(tokenized_tweets)
-    pnmf = ParetoNMF(pnmf_verbose=True)
-    n_topics = pnmf.evaluate(tfidf_matrix)
+    # documents = [document for document in
+    #              df.text.values if type(document) == str]
+    # tokenized_tweets = ttp.multiprocess_tokenize_tweet(documents)
+    # tfidf, tfidf_matrix = ttp.tfidf_vectorizer(tokenized_tweets)
+    # pnmf = ParetoNMF(pnmf_verbose=True)
+    # n_topics = pnmf.evaluate(tfidf_matrix)
