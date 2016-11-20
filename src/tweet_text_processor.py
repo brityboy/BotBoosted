@@ -1,26 +1,14 @@
-# from __future__ import division
 import numpy as np
 import pandas as pd
 import twokenize as tw
 import re
 import string
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-# from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.feature_extraction.text import TfidfVectorizer
 from collections import Counter
-# from itertools import combinations
-# from dit.divergences import jensen_shannon_divergence
-# import dit
-from dill import pickle
-from sklearn.decomposition import NMF
-# from sklearn.metrics.pairwise import cosine_similarity, pairwise_distances
-import matplotlib.pyplot as plt
 from information_gain_ratio import *
 from unidecode import unidecode
 import multiprocessing as mp
 import time
-# from scipy.spatial.distance import cosine
-import warnings
-import operator as op
 from paretonmf import ParetoNMF
 
 
@@ -39,8 +27,8 @@ def fix_the_sequence_of_repeated_characters(word):
         strings = re.findall(letter+'{3,}', word)
         strings.sort(key=len, reverse=True)
         if strings:
-            for string in strings:
-                word = word.replace(string, letter * 2)
+            for char in strings:
+                word = word.replace(char, letter * 2)
     return word
 
 
@@ -156,7 +144,8 @@ def replace_infrequent_words_with_tkn(tokenized_tweets, n_words):
          - n_words - word count frequency cut off such that if frequency
          is n_words and below, then the word will be replaced
     OUTPUT
-         - list of tokenized tweets where words that occur n_words times or less
+         - list of tokenized tweets where words that occur
+         n_words times or less
          are replaced with the word '_unk_'
     Returns tokenized_tweets, a list of cleaned up tweets
     '''
@@ -215,64 +204,6 @@ def compute_for_doc_importance(tfidf, matrix, topic_label):
     return igr_list, bag_of_words
 
 
-def compute_doc_importance_parallel(tfidf, matrix, topic_label):
-    '''
-    INPUT
-         - matrix - the sparse matrix (document, word) information
-         - topic_label - the topic into which this document falls
-    OUTPUT
-         - igr_list - list
-
-    Computes for the information gain ratio of each word with the topic as
-    the label given the following procedure, bag_of_words
-
-    This procedure uses multiprocessing and threading in order to
-    '''
-    igr_list = []
-    bag_of_words = map(unidecode, tfidf.vocabulary_.keys())
-    n_words = len(bag_of_words)
-    topic_label = np.array(map(str, topic_label))
-    word_df = pd.DataFrame(matrix.todense(), columns=bag_of_words)
-    n_processes = mp.cpu_count()
-    pool = mp.Pool(processes=n_processes)
-    info_tuple_list = [(word, word_df, topic_label) for word in bag_of_words]
-    split_info_tuple_list = split_list(info_tuple_list, n_processes)
-    start = time.time()
-    results = pool.map(tuple_igr_computation, split_info_tuple_list)
-    print("multiprocessing igr computation: ", time.time() - start)
-    return igr_list, bag_of_words
-
-
-def tuple_igr_computation(info_tuple):
-    '''
-    INPUT
-         - info_tuple containing (attribute, dataframe, and y)
-    OUTPUT
-         - information_gain_ratio: float
-    Returns
-    '''
-    attribute, df, y = info_tuple
-    print(attribute)
-    try:
-        return information_gain_ratio_continuous(attribute, df, y)
-    except:
-        return attribute
-
-
-def remove_nan_tweets_from_df(df):
-    '''
-    INPUT
-         - df: pandas df with tweets in the text column
-    OUTPUT
-         - pandas df
-
-    Returns a dataframe where text rows that are not string are removed
-    '''
-    df['istext'] = df.text.apply(lambda x: 1 if type(x) == str else 0)
-    df = df.query('istext == 1')
-    return df
-
-
 def get_most_important_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
                                                   topic_label, df):
     '''
@@ -305,7 +236,8 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, tfidf_matrix,
         print('this is the exemplary tweet from this topic')
         # print(subset_tweet_array[np.argmax(subset_sent_importance)])
         print('these are 5 unique example tweets from this topic')
-        print(np.unique(subset_tweet_array[np.argsort(subset_sent_importance)[::-1]])[:5])
+        print(np.unique(subset_tweet_array
+                        [np.argsort(subset_sent_importance)[::-1]])[:5])
         print('\n')
         print('these are the top words from this topic')
         print(bag_of_words[np.argsort(H[i])[::-1]][:10])
@@ -352,6 +284,7 @@ def extract_tweets_from_dataframe(df):
     del H
     del tfidf
 
+
 def process_real_and_fake_tweets(df):
     '''
     INPUT
@@ -376,4 +309,23 @@ def process_real_and_fake_tweets(df):
 
 if __name__ == "__main__":
     df = pd.read_csv('data/trumptweets.csv')
-    process_real_and_fake_tweets(df)
+    # process_real_and_fake_tweets(df)
+    documents = [document for document in
+                 df.text.values if type(document) == str]
+    start = time.time()
+    tokenized_tweets = multiprocess_tokenize_tweet(documents)
+    print("tokenizing the tweets took: ", time.time() - start)
+    print('creating the tfidf_matrix...')
+    start = time.time()
+    tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
+    print("vectorizing took: ", time.time() - start)
+    print('extracting topics...')
+    start = time.time()
+    pnmf = ParetoNMF(noise_pct=.20, step=1, pnmf_verbose=True)
+    pnmf.evaluate(tfidf_matrix)
+    W = pnmf.nmf.transform(tfidf_matrix)
+    H = pnmf.nmf.components_
+    topic_label = np.apply_along_axis(func1d=np.argmax,
+                                      axis=1, arr=W)
+    print("extracted {} topics: "
+          .format(pnmf.topic_count), time.time() - start)
