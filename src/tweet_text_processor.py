@@ -12,6 +12,7 @@ from paretonmf import ParetoNMF
 from sklearn.ensemble import RandomForestClassifier
 from collections import defaultdict
 # from corpus_explorer import visualize_topics, visualize_tweets
+from scipy import sparse
 
 
 def fix_the_sequence_of_repeated_characters(word):
@@ -191,8 +192,10 @@ def compute_for_word_importance(tfidf_matrix, topic_label):
     Returns the importance of each word as its feature importance from a
     random forest
     '''
+    sparse_tfidf = sparse.csr_matrix(tfidf_matrix)
     model = RandomForestClassifier(n_jobs=-1)
-    model.fit(tfidf_matrix.todense(), topic_label)
+    model.fit(sparse_tfidf, topic_label)
+    # model.fit(tfidf_matrix.todense(), topic_label)
     return model.feature_importances_
 
 
@@ -239,12 +242,16 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
     # which while MORE ACCURATE, is a very costly operation
     # (suited for large machines, uncomment the lines below to access these)
     if detailed:
-        sentimportance = \
-            tfidf_matrix.todense() * word_importance.reshape(-1, 1)
-        wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
-                                        arr=tfidf_matrix.todense())
-        avg_sent_imp = sentimportance/wordcount.reshape(-1, 1)
-        avg_sent_imp = np.asarray(avg_sent_imp).flatten()
+        # sentimportance = \
+        #     tfidf_matrix.todense() * word_importance.reshape(-1, 1)
+        sparse_tfidf = sparse.csr_matrix(tfidf_matrix)
+        sentimportance = sparse_tfidf.dot(word_importance)
+        wordcount = np.sum(sparse_tfidf > 0, axis=1)
+        # wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
+        #                                 arr=tfidf_matrix.todense())
+        # avg_sent_imp = sentimportance/wordcount.reshape(-1, 1)
+        # avg_sent_imp = np.asarray(avg_sent_imp).flatten()
+        avg_sent_imp = sentimportance/np.asarray(wordcount).T[0]
     else:
         # the operations below are suboptimal
         # but will work on smaller instances
@@ -399,38 +406,39 @@ if __name__ == "__main__":
                                                                df,
                                                                verbose=verbose,
                                                                detailed=True)
-    print('\n')
-    print('below extraction computes sentence importance from W matrix')
-    print('\n')
-    tweet_dict = get_most_important_tweets_and_words_per_topic(tfidf, H, W,
-                                                               tfidf_matrix,
-                                                               topic_label,
-                                                               word_importance,
-                                                               df,
-                                                               verbose=verbose)
-    print('\n')
-    print('below extraction uses feature importances from W matrix')
-    print('\n')
-    word_importance2 = compute_for_word_importance_lightweight(H)
-    tweet_dict = \
-        get_most_important_tweets_and_words_per_topic(tfidf, H, W,
-                                                      tfidf_matrix,
-                                                      topic_label,
-                                                      word_importance2,
-                                                      df,
-                                                      verbose=verbose)
-    print('\n')
-    print('below extraction does not use word importance computation')
-    print('\n')
-    # word_importance3 = compute_for_word_importance_igr(H)
-    word_importance3 = 1
-    tweet_dict = \
-        get_most_important_tweets_and_words_per_topic(tfidf, H, W,
-                                                      tfidf_matrix,
-                                                      topic_label,
-                                                      word_importance3,
-                                                      df,
-                                                      verbose=verbose)
+    # print('\n')
+    # print('below extraction computes sentence importance from W matrix')
+    # print('\n')
+    # tweet_dict = get_most_important_tweets_and_words_per_topic(tfidf, H, W,
+    #                                                            tfidf_matrix,
+    #                                                            topic_label,
+    #                                                            word_importance,
+    #                                                            df,
+    #                                                            verbose=verbose)
+    # print('\n')
+    # print('below extraction uses feature importances from W matrix')
+    # print('\n')
+    # word_importance2 = compute_for_word_importance_lightweight(H)
+    # tweet_dict = \
+    #     get_most_important_tweets_and_words_per_topic(tfidf, H, W,
+    #                                                   tfidf_matrix,
+    #                                                   topic_label,
+    #                                                   word_importance2,
+    #                                                   df,
+    #                                                   verbose=verbose,
+    #                                                   detailed=True)
+    # print('\n')
+    # print('below extraction does not use word importance computation')
+    # print('\n')
+    # # word_importance3 = compute_for_word_importance_igr(H)
+    # word_importance3 = 1
+    # tweet_dict = \
+    #     get_most_important_tweets_and_words_per_topic(tfidf, H, W,
+    #                                                   tfidf_matrix,
+    #                                                   topic_label,
+    #                                                   word_importance3,
+    #                                                   df,
+    #                                                   verbose=verbose)
     # print('\n')
     # print('below extraction uses information gain ratio')
     # print('\n')
