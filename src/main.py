@@ -136,7 +136,7 @@ def botboosted_demonstration_v2(dbname, collection, verbose=True):
     if verbose:
         del tweet_list
         print("making predictions took: ", time.time() - start)
-    process_real_and_fake_tweets(predicted_tweets)
+    process_real_and_fake_tweets(predicted_tweets, verbose=verbose)
     if verbose:
         print('\n')
         print("entire thing took: ", time.time() - totalstart)
@@ -192,7 +192,8 @@ def botboosted_v2(searchQuery, verbose=False):
         print("loading model took: ", time.time() - start)
         print('getting and processing tweets...')
         start = time.time()
-    tweet_list = download_tweets_given_search_query(searchQuery)
+    tweet_list = download_tweets_given_search_query(searchQuery,
+                                                    verbose=verbose)
     if verbose:
         print("loading and processing tweet data took: ", time.time() - start)
         print('making predictions...')
@@ -200,12 +201,14 @@ def botboosted_v2(searchQuery, verbose=False):
     predicted_tweets = make_lightweight_predictions_v2(tweet_list)
     if verbose:
         print("making predictions took: ", time.time() - start)
-    process_real_and_fake_tweets(predicted_tweets)
+    process_real_and_fake_tweets(predicted_tweets, verbose=verbose)
     if verbose:
         print('\n')
         print("entire thing took: ", time.time() - totalstart)
 
 
 if __name__ == "__main__":
-    # botboosted_v2("hillary clinton email", verbose=True)
-    botboosted_demonstration_v2('clintonmillion', 'topictweets', verbose=True)
+    # botboosted_v2("#marcosnohero", verbose=True)
+    botboosted_demonstration_v2('clintonmillion',
+                                'topictweets',
+                                verbose=True)
