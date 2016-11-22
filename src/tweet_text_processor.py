@@ -283,10 +283,13 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
         nsubtweets = subset_sent_importance.shape[0]
         exemplary_tweet = subset_tweet_array[np.argmax(subset_sent_importance)]
         tweet_dict['exemplary_tweet'][i] = exemplary_tweet
-        top_ten_words = \
+        top_words = \
             bag_of_words[np.argsort(word_importance*H[i])[::-1]][:5]
-        tweet_dict['top_words'][i] = top_ten_words
+        tweet_dict['top_words'][i] = ' '.join(top_words)
         subset_pct = round(float(nsubtweets)/ntweets*100, 2)
+        tweet_dict['topic_size_pct'][i] = subset_pct
+        tweet_dict['topic_size_n'][i] = nsubtweets
+        tweet_dict['tweet_subset_sentimportance'][i] = subset_sent_importance
         if verbose:
             print('\n')
             print('topic #{}'.format(i+1))
@@ -294,7 +297,7 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
             print(exemplary_tweet)
             print('\n')
             print('these are the top words from this topic')
-            print(top_ten_words)
+            print(top_words)
             print('{} percent of tweets are in this topic'.format(subset_pct))
     return tweet_dict
 
