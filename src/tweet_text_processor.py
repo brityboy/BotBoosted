@@ -82,7 +82,7 @@ def tokenize_tweet(text):
         elif token == 'Retweeted':
             pass
         elif type(token) == int:
-            token_list.append('_number_')
+            token_list.append('_num_')
         elif emoticon:
             token_list.append(tw.emoticons.analyze_tweet(token).lower())
         else:
@@ -282,13 +282,13 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
         #     tfidf_matrix.todense() * word_importance.reshape(-1, 1)
         sparse_tfidf = sparse.csr_matrix(tfidf_matrix)
         sentimportance = sparse_tfidf.dot(word_importance)
-        wordcount = np.sum(sparse_tfidf > 0, axis=1)
+        # wordcount = np.sum(sparse_tfidf > 0, axis=1)
         # wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
         #                                 arr=tfidf_matrix.todense())
         # avg_sent_imp = sentimportance/wordcount.reshape(-1, 1)
         # avg_sent_imp = np.asarray(avg_sent_imp).flatten()
-        avg_sent_imp = sentimportance/np.asarray(wordcount).T[0]
-        # avg_sent_imp = sentimportance
+        # avg_sent_imp = sentimportance/np.asarray(wordcount).T[0]
+        avg_sent_imp = np.array(sentimportance)
     else:
         # the operations below are suboptimal
         # but will work on smaller instances
@@ -328,6 +328,8 @@ def extract_tweets_from_dataframe(df, verbose=False):
 
     Return nothing
     '''
+    df['length'] = df.text.apply(len)
+    df = df.query('length > 1')
     if verbose:
         print('tokenizing tweets...')
         start = time.time()
@@ -372,138 +374,41 @@ def extract_tweets_from_dataframe(df, verbose=False):
     del H
     del tfidf
     del pnmf
+    return tweet_dict
 
 
 def process_real_and_fake_tweets(df, verbose=False):
     '''
     INPUT
-         - dataframe
+         - dataframe - must have the screen_name, the text, and the
+         pred value for a user so that it can be processed for
+         real and fake tweet exploration
          - verbose: set this to true for it to print the output
     OUTPUT
-         - prints out the top tweets for an arbitrary topic number
-           tentatively set to half a percent of the sample size
+         -
 
     Returns none
     '''
-    print('we are going to process {} tweets'.format(df.shape[0]))
+    if verbose:
+        print('we are going to process {} tweets'.format(df.shape[0]))
     fakedf = df.query('pred == 1')
     realdf = df.query('pred == 0')
-    print('there are {} fake tweets in this query'.format(fakedf.shape[0]))
-    print('there are {} real tweets in this query'.format(realdf.shape[0]))
+    if verbose:
+        print('there are {} fake tweets in this query'.format(fakedf.shape[0]))
+        print('there are {} real tweets in this query'.format(realdf.shape[0]))
     if fakedf.shape[0] > 0:
+        if verbose:
+            print('processing the fake tweets')
         extract_tweets_from_dataframe(fakedf, verbose=verbose)
     del fakedf
     if realdf.shape[0] > 0:
+        if verbose:
+            print('processing the real tweets')
         extract_tweets_from_dataframe(realdf, verbose=verbose)
 
 
 if __name__ == "__main__":
-    # df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
-    df = pd.read_csv('data/trumptweets.csv')
-    process_real_and_fake_tweets(df, verbose=True)
-    # verbose = True
-    # detailed = True
-    # if verbose:
-    #     print('tokenizing tweets...')
-    #     start = time.time()
-    # documents = [document for document in
-    #              df.text.values if type(document) == str]
-    # tokenized_tweets = multiprocess_tokenize_tweet(documents)
-    # if verbose:
-    #     print("tokenizing the tweets took: ", time.time() - start)
-    #     print('creating the tfidf_matrix...')
-    #     start = time.time()
-    # tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
-    # if verbose:
-    #     print("vectorizing took: ", time.time() - start)
-    #     print('extracting topics...')
-    #     start = time.time()
-    # pnmf = ParetoNMF(noise_pct=.2, step=1, pnmf_verbose=True)
-    # pnmf.evaluate(tfidf_matrix)
-    # W = pnmf.nmf.transform(tfidf_matrix)
-    # H = pnmf.nmf.components_
-    # topic_label = np.apply_along_axis(func1d=np.argmax,
-    #                                   axis=1, arr=W)
-    # if verbose:
-    #     print("extracted {} topics: "
-    #           .format(pnmf.topic_count), time.time() - start)
-    #     print('determining important words...')
-    #     start = time.time()
-    # print('\n')
-    # print('below extraction uses feature importances from tfidf matrix')
-    # print('below extraction computes sentence importance from tfidf matrix')
-    # print('\n')
-    # word_importance = compute_for_word_importance(tfidf_matrix, topic_label)
-    # if verbose:
-    #     print("word importance computations took: ", time.time() - start)
-    #     print('fetching important tweets...')
-    # start = time.time()
-    # tweet_dict = get_most_important_tweets_and_words_per_topic(tfidf, H, W,
-    #                                                            tfidf_matrix,
-    #                                                            topic_label,
-    #                                                            word_importance,
-    #                                                            documents,
-    #                                                            verbose=verbose,
-    #                                                            detailed=True)
-    # print('\n')
-    # print('below extraction uses feature importances from naive bayes')
-    # print('below extraction computes sentence importance from tfidf matrix')
-    # print('\n')
-    # countvec, tf_matrix = count_vectorizer(documents)
-    # pnmf = ParetoNMF(noise_pct=.2, step=1, pnmf_verbose=True)
-    # pnmf.evaluate(tf_matrix)
-    # W = pnmf.nmf.transform(tf_matrix)
-    # H = pnmf.nmf.components_
-    # topic_label = np.apply_along_axis(func1d=np.argmax,
-    #                                   axis=1, arr=W)
-    # word_importance = compute_for_word_log_prob(tf_matrix, topic_label)
-    # tweet_dict = defaultdict(list)
-    # bag_of_words = np.array(map(unidecode, countvec.get_feature_names()))
-    # topic_label = np.array(topic_label)
-    # ntweets = topic_label.shape[0]
-    # # the lines below run the computations on the tfidf_matrix.todense(),
-    # # which while MORE ACCURATE, is a very costly operation
-    # # (suited for large machines, uncomment the lines below to access these)
-    # if detailed:
-    #     # sentimportance = \
-    #     #     tfidf_matrix.todense() * word_importance.reshape(-1, 1)
-    #     sparse_tfidf = sparse.csr_matrix(tfidf_matrix)
-    #     sentimportance = 1
-    #     wordcount = np.sum(sparse_tfidf > 0, axis=1)
-    #     # wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
-    #     #                                 arr=tfidf_matrix.todense())
-    #     # avg_sent_imp = sentimportance/wordcount.reshape(-1, 1)
-    #     # avg_sent_imp = np.asarray(avg_sent_imp).flatten()
-    #     avg_sent_imp = sentimportance/np.asarray(wordcount).T[0]
-    #     # avg_sent_imp = sentimportance
-    # else:
-    #     # the operations below are suboptimal
-    #     # but will work on smaller instances
-    #     # because they rely on the decomposed W matrix
-    #     avg_sent_imp = np.mean(W, axis=1)
-    # tweetarray = np.array(documents)
-    # for i, unique_topic in enumerate(np.unique(topic_label)):
-    #     subset_tweet_array = tweetarray[topic_label == unique_topic]
-    #     subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
-    #     nsubtweets = subset_sent_importance.shape[0]
-    #     exemplary_tweet = subset_tweet_array[np.argmax(subset_sent_importance)]
-    #     tweet_dict['exemplary_tweet'].append(exemplary_tweet)
-    #     if word_importance.shape[0] == 1:
-    #         top_ten_words = \
-    #             bag_of_words[np.argsort(word_importance*H[i])[::-1]][:10]
-    #     else:
-    #         top_ten_words = \
-    #             bag_of_words[np.argsort(word_importance[i]*H[i])[::-1]][:10]
-    #     tweet_dict['top_words'].append(top_ten_words)
-    #     subset_pct = round(float(nsubtweets)/ntweets*100, 2)
-    #     if verbose:
-    #         print('\n')
-    #         print('topic #{}'.format(i+1))
-    #         print('this is the exemplary tweet from this topic')
-    #         print(exemplary_tweet)
-    #         # print('these are 5 unique example tweets from this topic')
-    #         # print(subset_tweet_array[np.argsort(subset_sent_importance)[::-1]])[:5]
-    #         print('\n')
-    #         print('these are the top words from this topic')
-    #         print(top_ten_words)
-    #         print('{} percent of tweets are in this topic'.format(subset_pct))
+    df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
+    # df = pd.read_csv('data/trumptweets.csv')
+    # process_real_and_fake_tweets(df, verbose=True)
+    extract_tweets_from_dataframe(df, verbose=True)
