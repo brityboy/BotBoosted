@@ -71,6 +71,8 @@ def tokenize_tweet(text):
             pass
         elif numnum:
             pass
+        elif re.search('\d+', token):
+            token_list.append('_num_')
         elif token[0] == '@':
             token_list.append('_user_')
         elif mentions:
@@ -268,7 +270,7 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
     Returns the most important tweets per topic by getting the average tfidf
     of the words in the sentence
     '''
-    tweet_dict = defaultdict(list)
+    tweet_dict = defaultdict(dict)
     bag_of_words = np.array(map(unidecode, tfidf.get_feature_names()))
     topic_label = np.array(topic_label)
     ntweets = topic_label.shape[0]
@@ -298,10 +300,10 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
         subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
         nsubtweets = subset_sent_importance.shape[0]
         exemplary_tweet = subset_tweet_array[np.argmax(subset_sent_importance)]
-        tweet_dict['exemplary_tweet'].append(exemplary_tweet)
+        tweet_dict['exemplary_tweet'][i] = exemplary_tweet
         top_ten_words = \
-            bag_of_words[np.argsort(word_importance*H[i])[::-1]][:10]
-        tweet_dict['top_words'].append(top_ten_words)
+            bag_of_words[np.argsort(word_importance*H[i])[::-1]][:5]
+        tweet_dict['top_words'][i] = top_ten_words
         subset_pct = round(float(nsubtweets)/ntweets*100, 2)
         if verbose:
             print('\n')
