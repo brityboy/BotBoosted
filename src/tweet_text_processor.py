@@ -16,6 +16,21 @@ from scipy import sparse
 from sklearn.naive_bayes import MultinomialNB
 
 
+def blockify_tweet(tweet):
+    '''
+    INPUT
+         - tweet as a string in a single line
+    OUTPUT
+         - a blockified tweet (such that different words are in multiple lines)
+    Returns a bockified tweet as a string
+    '''
+    tweet = tweet.replace('\n', '')
+    word_count = len(tweet.split())
+    line_length = int(np.sqrt(word_count))
+    lines = split_list(tweet.split(), line_length)
+    return '\n'.join([' '.join(line) for line in lines])
+
+
 def fix_the_sequence_of_repeated_characters(word):
     '''
     INPUT
@@ -282,7 +297,8 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
         subset_sent_importance = sentimportance[topic_label == unique_topic]
         nsubtweets = subset_sent_importance.shape[0]
         exemplary_tweet = subset_tweet_array[np.argmax(subset_sent_importance)]
-        tweet_dict['exemplary_tweet'][i] = exemplary_tweet
+        # tweet_dict['exemplary_tweet'][i] = exemplary_tweet
+        tweet_dict['exemplary_tweet'][i] = blockify_tweet(exemplary_tweet)
         top_words = \
             bag_of_words[np.argsort(word_importance*H[i])[::-1]][:5]
         tweet_dict['top_words'][i] = ', '.join(top_words)
@@ -394,5 +410,5 @@ def process_real_and_fake_tweets(df, verbose=False):
 if __name__ == "__main__":
     df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
     # df = pd.read_csv('data/trump_predicted_tweets_v2.csv')
-    process_real_and_fake_tweets(df, verbose=True)
-    # extract_tweets_from_dataframe(df, verbose=True)
+    # process_real_and_fake_tweets(df, verbose=True)
+    tweet_dict = extract_tweets_from_dataframe(df, verbose=True)
