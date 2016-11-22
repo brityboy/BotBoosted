@@ -242,7 +242,7 @@ def compute_for_word_importance_lightweight(H):
     Returns the importance of each word as its feature importance from a
     random forest
     '''
-    model = RandomForestClassifier(n_jobs=-1)
+    model = RandomForestClassifier(n_jobs=-1, n_estimators=100)
     model.fit(H, range(H.shape[0]))
     return model.feature_importances_
 
@@ -274,30 +274,12 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
     bag_of_words = np.array(map(unidecode, tfidf.get_feature_names()))
     topic_label = np.array(topic_label)
     ntweets = topic_label.shape[0]
-    # the lines below run the computations on the tfidf_matrix.todense(),
-    # which while MORE ACCURATE, is a very costly operation
-    # (suited for large machines, uncomment the lines below to access these)
-    if detailed:
-        # sentimportance = \
-        #     tfidf_matrix.todense() * word_importance.reshape(-1, 1)
-        sparse_tfidf = sparse.csr_matrix(tfidf_matrix)
-        sentimportance = sparse_tfidf.dot(word_importance)
-        # wordcount = np.sum(sparse_tfidf > 0, axis=1)
-        # wordcount = np.apply_along_axis(lambda x: np.sum(x > 0), axis=1,
-        #                                 arr=tfidf_matrix.todense())
-        # avg_sent_imp = sentimportance/wordcount.reshape(-1, 1)
-        # avg_sent_imp = np.asarray(avg_sent_imp).flatten()
-        # avg_sent_imp = sentimportance/np.asarray(wordcount).T[0]
-        avg_sent_imp = np.array(sentimportance)
-    else:
-        # the operations below are suboptimal
-        # but will work on smaller instances
-        # because they rely on the decomposed W matrix
-        avg_sent_imp = np.mean(W, axis=1)
+    sparse_tfidf = sparse.csr_matrix(tfidf_matrix)
+    sentimportance = sparse_tfidf.dot(word_importance)
     tweetarray = np.array(documents)
     for i, unique_topic in enumerate(np.unique(topic_label)):
         subset_tweet_array = tweetarray[topic_label == unique_topic]
-        subset_sent_importance = avg_sent_imp[topic_label == unique_topic]
+        subset_sent_importance = sentimportance[topic_label == unique_topic]
         nsubtweets = subset_sent_importance.shape[0]
         exemplary_tweet = subset_tweet_array[np.argmax(subset_sent_importance)]
         tweet_dict['exemplary_tweet'][i] = exemplary_tweet
@@ -310,8 +292,6 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
             print('topic #{}'.format(i+1))
             print('this is the exemplary tweet from this topic')
             print(exemplary_tweet)
-            # print('these are 5 unique example tweets from this topic')
-            # print(subset_tweet_array[np.argsort(subset_sent_importance)[::-1]])[:5]
             print('\n')
             print('these are the top words from this topic')
             print(top_ten_words)
@@ -328,6 +308,7 @@ def extract_tweets_from_dataframe(df, verbose=False):
 
     Return nothing
     '''
+    df.text = df.text.apply(str)
     df['length'] = df.text.apply(len)
     df = df.query('length > 1')
     if verbose:
@@ -357,7 +338,6 @@ def extract_tweets_from_dataframe(df, verbose=False):
         print('determining important words...')
         start = time.time()
     word_importance = compute_for_word_importance(tfidf_matrix, topic_label)
-    # word_importance = compute_for_word_importance_lightweight(H)
     if verbose:
         print("word importance computations took: ", time.time() - start)
         print('fetching important tweets...')
@@ -409,6 +389,6 @@ def process_real_and_fake_tweets(df, verbose=False):
 
 if __name__ == "__main__":
     df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
-    # df = pd.read_csv('data/trumptweets.csv')
-    # process_real_and_fake_tweets(df, verbose=True)
-    extract_tweets_from_dataframe(df, verbose=True)
+    # df = pd.read_csv('data/trump_predicted_tweets_v2.csv')
+    process_real_and_fake_tweets(df, verbose=True)
+    # extract_tweets_from_dataframe(df, verbose=True)
