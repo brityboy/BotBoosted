@@ -129,7 +129,7 @@ def botboosted_demonstration_v2(dbname, collection, verbose=True):
         print('making predictions...')
         start = time.time()
     predicted_tweets = make_lightweight_predictions_v2(tweet_list)
-    predicted_tweets.to_csv('data/clinton_predicted_tweets_v2.csv')
+    # predicted_tweets.to_csv('data/clinton_predicted_tweets_v2.csv')
     # del history_model_v2
     # del behavior_model_v2
     # del ensemble_model_v2
