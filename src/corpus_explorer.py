@@ -1,5 +1,7 @@
 import pandas as pd
 from tweet_text_processor import multiprocess_tokenize_tweet, tfidf_vectorizer
+from tweet_text_processor import compute_for_word_importance
+from tweet_text_processor import get_most_important_tweets_and_words_per_topic
 import time
 from paretonmf import ParetoNMF
 import numpy as np
@@ -122,15 +124,70 @@ if __name__ == "__main__":
                                       axis=1, arr=W)
     print("extracted {} topics: "
           .format(pnmf.topic_count), time.time() - start)
-
-    print('plotting topics regular...')
+    print('determining important words...')
     start = time.time()
-    color_list, mds = visualize_topics(H)
-    print("plotted topics: ", time.time() - start)
+    word_importance = compute_for_word_importance(tfidf_matrix, topic_label)
+    # word_importance = compute_for_word_importance_lightweight(H)
+    print("word importance computations took: ", time.time() - start)
+    print('fetching important tweets...')
+    start = time.time()
+    tweet_dict = get_most_important_tweets_and_words_per_topic(tfidf, H, W,
+                                                               tfidf_matrix,
+                                                               topic_label,
+                                                               word_importance,
+                                                               documents,
+                                                               verbose=True)
+    # print("extracted {} topics: "
+    #       .format(pnmf.topic_count), time.time() - start)
+    #
+    # print('plotting topics regular...')
+    # start = time.time()
+    # color_list, mds = visualize_topics(H)
+    # print("plotted topics: ", time.time() - start)
+    #
+    # print('plotting tweets within topics regular...')
+    # for topic_number, color in zip(np.unique(topic_label), color_list):
+    #     start = time.time()
+    #     visualize_tweets(W, topic_number, color)
+    #     print("plotted tweets: ", time.time() - start)
+    #     plt.show()
+    mds = MDS(n_jobs=-1)
+    hflat = mds.fit_transform(H)
+    xs, ys = hflat[:, 0], hflat[:, 1]
+    cluster_names = tweet_dict['top_words']
+    titles = tweet_dict['exemplary_tweet']
+    clusdf = pd.DataFrame(dict(x=xs, y=ys, label=range(hflat.shape[0]), title=titles.values()))
+    groups = clusdf.groupby('label')
+    # set up plot
+    fig, ax = plt.subplots(figsize=(17, 9)) # set size
+    ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
 
-    print('plotting tweets within topics regular...')
-    for topic_number, color in zip(np.unique(topic_label), color_list):
-        start = time.time()
-        visualize_tweets(W, topic_number, color)
-        print("plotted tweets: ", time.time() - start)
-        plt.show()
+    #iterate through groups to layer the plot
+    #note that I use the cluster_name and cluster_color dicts with the 'name' lookup to return the appropriate color/label
+    for name, group in groups:
+        ax.plot(group.x, group.y, marker='o', linestyle='', ms=12, label=cluster_names[name], mec='none')
+        ax.set_aspect('auto')
+        ax.tick_params(\
+            axis= 'x',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            bottom='off',      # ticks along the bottom edge are off
+            top='off',         # ticks along the top edge are off
+            labelbottom='off')
+        ax.tick_params(\
+            axis= 'y',         # changes apply to the y-axis
+            which='both',      # both major and minor ticks are affected
+            left='off',      # ticks along the bottom edge are off
+            top='off',         # ticks along the top edge are off
+            labelleft='off')
+    ax.legend(loc='best', numpoints=1)  #show legend with only 1 point
+
+    #add label in x,y position with the label as the film title
+    for i in range(len(clusdf)):
+        ax.text(clusdf.ix[i]['x'], clusdf.ix[i]['y'], clusdf.ix[i]['title'], size=12)
+
+
+
+    plt.show() #show the plot
+
+    #uncomment the below to save the plot if need be
+    #plt.savefig('clusters_small_noaxes.png', dpi=200)
