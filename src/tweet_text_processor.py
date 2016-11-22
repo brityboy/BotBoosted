@@ -265,7 +265,7 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
          - detailed: to have the function compute for sentence importance using
          the tfidf values and not just the W matrix values
     OUTPUT
-         - tweet_dict: dictionary that has two keys:
+         - tweet_dict: dictionary that has the ff keys:
             a)
     Returns the most important tweets per topic by getting the average tfidf
     of the words in the sentence
@@ -285,11 +285,12 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
         tweet_dict['exemplary_tweet'][i] = exemplary_tweet
         top_words = \
             bag_of_words[np.argsort(word_importance*H[i])[::-1]][:5]
-        tweet_dict['top_words'][i] = ' '.join(top_words)
+        tweet_dict['top_words'][i] = ', '.join(top_words)
         subset_pct = round(float(nsubtweets)/ntweets*100, 2)
         tweet_dict['topic_size_pct'][i] = subset_pct
         tweet_dict['topic_size_n'][i] = nsubtweets
         tweet_dict['tweet_subset_sentimportance'][i] = subset_sent_importance
+        tweet_dict['topic_tweets'][i] = subset_tweet_array
         if verbose:
             print('\n')
             print('topic #{}'.format(i+1))
