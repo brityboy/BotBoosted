@@ -74,9 +74,9 @@ def tokenize_tweet(text):
         separators = tw.Separators_RE.search(token)
         emoticon = tw.emoticons.Emoticon_RE.search(token)
         if url:
-            token_list.append('_url_')
+            token_list.append('url_')
         elif token[0] == '#':
-            token_list.append('_hash_')
+            token_list.append('hash_')
             pass
         elif time:
             pass
@@ -87,17 +87,17 @@ def tokenize_tweet(text):
         elif numnum:
             pass
         elif re.search('\d+', token):
-            token_list.append('_num_')
+            token_list.append('num_')
         elif token[0] == '@':
-            token_list.append('_user_')
+            token_list.append('user_')
         elif mentions:
-            token_list.append('_user_')
+            token_list.append('user_')
         elif token == 'RT':
             pass
         elif token == 'Retweeted':
             pass
         elif type(token) == int:
-            token_list.append('_num_')
+            token_list.append('num_')
         elif emoticon:
             token_list.append(tw.emoticons.analyze_tweet(token).lower())
         else:
