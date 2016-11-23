@@ -425,15 +425,16 @@ def extract_tweets_from_dataframe_for_barplots(df, verbose=False):
         print("word importance computations took: ", time.time() - start)
         print('fetching important tweets...')
         start = time.time()
-    tweet_dict = get_most_important_tweets_and_words_per_topic(tfidf, H, W,
-                                                               tfidf_matrix,
-                                                               topic_label,
-                                                               word_importance,
-                                                               documents,
-                                                               verbose=verbose)
+    tweet_dict = get_important_tweets_and_words_for_barplot(tfidf, H, W,
+                                                            tfidf_matrix,
+                                                            topic_label,
+                                                            word_importance,
+                                                            df,
+                                                            verbose=verbose)
     if verbose:
         print("fetching took: ", time.time() - start)
-
+    rf_df = compute_real_and_fake_tweets_within_each_topics(topic_label, df)
+    make_stacked_barplot(rf_df, tweet_dict)
     del W
     del H
     del tfidf
@@ -524,6 +525,80 @@ def process_real_and_fake_tweets_w_plots(df, verbose=False):
     extract_tweets_from_dataframe_for_barplots(df, verbose=verbose)
 
 
+def get_important_tweets_and_words_for_barplot(tfidf, H, W, tfidf_matrix,
+                                               topic_label,
+                                               word_importance, df,
+                                               verbose=False,
+                                               detailed=False):
+    '''
+    INPUT
+         - tfidf: this is the tfidf object
+         - H: matrix, this is the topic matrix from NMF
+         - tfidf_matrix: this is the tfidf matrix
+         - topic_label: this is a list that has the topic label for each doc
+         - df: this dataframe has all the tweets
+         - df: this is the tweet content from the filtered dataframe
+         - verbose: to have the function print out its contnets
+         - detailed: to have the function compute for sentence importance using
+         the tfidf values and not just the W matrix values
+    OUTPUT
+         - tweet_dict: dictionary that has the ff keys:
+            a)
+    Returns the most important tweets per topic by getting the average tfidf
+    of the words in the sentence
+    '''
+    tweet_dict = defaultdict(dict)
+    bag_of_words = np.array(map(unidecode, tfidf.get_feature_names()))
+    topic_label = np.array(topic_label)
+    ntweets = topic_label.shape[0]
+    sparse_tfidf = sparse.csr_matrix(tfidf_matrix)
+    sentimportance = sparse_tfidf.dot(word_importance)
+    tweetarray = np.array(documents)
+    for i, unique_topic in enumerate(np.unique(topic_label)):
+        subset_tweet_array = tweetarray[topic_label == unique_topic]
+        subset_sent_importance = sentimportance[topic_label == unique_topic]
+        nsubtweets = subset_sent_importance.shape[0]
+        exemplary_tweet = subset_tweet_array[np.argmax(subset_sent_importance)]
+        # tweet_dict['exemplary_tweet'][i] = exemplary_tweet
+        tweet_dict['exemplary_tweet'][i] = blockify_tweet(exemplary_tweet)
+        top_words = \
+            bag_of_words[np.argsort(word_importance*H[i])[::-1]][:5]
+        tweet_dict['top_words'][i] = ', '.join(top_words)
+        subset_pct = round(float(nsubtweets)/ntweets*100, 2)
+        tweet_dict['topic_size_pct'][i] = subset_pct
+        tweet_dict['topic_size_n'][i] = nsubtweets
+        tweet_dict['tweet_subset_sentimportance'][i] = subset_sent_importance
+        tweet_dict['topic_tweets'][i] = subset_tweet_array
+        if verbose:
+            print('\n')
+            print('topic #{}'.format(i+1))
+            print('this is the exemplary tweet from this topic')
+            print(exemplary_tweet)
+            print('\n')
+            print('these are the top words from this topic')
+            print(top_words)
+            print('{} percent of tweets are in this topic'.format(subset_pct))
+    return tweet_dict
+
+
+def make_xtick_labels_with_top_words(rf_df, tweet_dict):
+    '''
+    INPUT
+         - rf_df: columns are label, fake, real, and the total number of tweets
+         - tweet_dict: dictionary that contains important information about the
+         extracted tweets
+    OUTPUT
+         - list
+    Returns a list that has the stacked top words which will pertain to the
+    topic being explained
+    '''
+    x_ticks = []
+    labels = rf_df.label.values
+    for label in labels:
+        x_ticks.append('\n'.join(tweet_dict['top_words'][label].split(', ')))
+    return x_ticks
+
+
 def make_stacked_barplot(rf_df, tweet_dict):
     '''
     INPUT
@@ -534,22 +609,57 @@ def make_stacked_barplot(rf_df, tweet_dict):
          - plots a stacked barplot
     Returns none
     '''
+    x_ticks = make_xtick_labels_with_top_words(rf_df, tweet_dict)
     total_fake = np.sum(rf_df.fake.values)
     total_real = np.sum(rf_df.real.values)
     N = len(rf_df.label.values)
-    menMeans = rf_df.fake.values
-    womenMeans = rf_df.real.values
+    fake_tweets = rf_df.fake.values
+    real_tweets = rf_df.real.values
     ind = np.arange(N)
     width = 0.35
-    p1 = plt.bar(ind, menMeans, width, color='r')
-    p2 = plt.bar(ind, womenMeans, width, color='y', bottom=menMeans)
-    plt.ylabel('Tweets')
+    p1 = plt.bar(ind, fake_tweets, width, color='.4')
+    p2 = plt.bar(ind, real_tweets, width, color='y', bottom=fake_tweets)
+    plt.ylabel('Count of Tweets')
     plt.title('There are {} fake tweets and {} real tweets'.format(total_fake,
                                                                    total_real))
-    plt.xticks(ind + width/2., ('G1', 'G2', 'G3', 'G4', 'G5'))
-    plt.legend((p2[0], p1[0]), ('Real', 'Fake'))
+    plt.xticks(ind + width/2., x_ticks)
+    plt.legend((p2[0], p1[0]), ('Real', 'Fake'), fontsize='large')
+    plt.grid('off')
+    plt.tight_layout()
     plt.show()
 
+
+def make_stacked_barplot_percentage(rf_df, tweet_dict):
+    '''
+    INPUT
+         - rf_df: columns are label, fake, real, and the total number of tweets
+         - tweet_dict: dictionary that contains important information about the
+         extracted tweets
+    OUTPUT
+         - plots a stacked barplot
+    Returns none
+    '''
+    x_ticks = make_xtick_labels_with_top_words(rf_df, tweet_dict)
+    rf_df['fake_pct'] = (rf_df.fake/rf_df.total)*100
+    rf_df['real_pct'] = (rf_df.real/rf_df.total)*100
+    total_tweets = df.shape[0]
+    total_fake = round(np.sum(rf_df.fake.values)/float(total_tweets), 2)*100
+    total_real = round(np.sum(rf_df.real.values)/float(total_tweets), 2)*100
+    N = len(rf_df.label.values)
+    fake_tweets = rf_df.fake_pct.values
+    real_tweets = rf_df.real_pct.values
+    ind = np.arange(N)
+    width = 0.35
+    p1 = plt.bar(ind, fake_tweets, width, color='.4')
+    p2 = plt.bar(ind, real_tweets, width, color='y', bottom=fake_tweets)
+    plt.ylabel('Percent of Tweets in a Topic')
+    title_string = '{} percent of tweets are Fake, {} percent are Real'
+    plt.title(title_string.format(total_fake, total_real))
+    plt.xticks(ind + width/2., x_ticks)
+    plt.legend((p2[0], p1[0]), ('Real', 'Fake'), fontsize='large')
+    plt.grid('off')
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     verbose = True
@@ -582,7 +692,6 @@ if __name__ == "__main__":
     H = pnmf.nmf.components_
     topic_label = np.apply_along_axis(func1d=np.argmax,
                                       axis=1, arr=W)
-    rf_df = compute_real_and_fake_tweets_within_each_topics(topic_label, df)
     if verbose:
         print("extracted {} topics: "
               .format(pnmf.topic_count), time.time() - start)
@@ -593,12 +702,15 @@ if __name__ == "__main__":
         print("word importance computations took: ", time.time() - start)
         print('fetching important tweets...')
         start = time.time()
-    tweet_dict = get_most_important_tweets_and_words_per_topic(tfidf, H, W,
-                                                               tfidf_matrix,
-                                                               topic_label,
-                                                               word_importance,
-                                                               documents,
-                                                               verbose=verbose)
+    tweet_dict = get_important_tweets_and_words_for_barplot(tfidf, H, W,
+                                                            tfidf_matrix,
+                                                            topic_label,
+                                                            word_importance,
+                                                            df,
+                                                            verbose=False,
+                                                            detailed=False)
     if verbose:
         print("fetching took: ", time.time() - start)
+    rf_df = compute_real_and_fake_tweets_within_each_topics(topic_label, df)
     make_stacked_barplot(rf_df, tweet_dict)
+    make_stacked_barplot_percentage(rf_df, tweet_dict)
