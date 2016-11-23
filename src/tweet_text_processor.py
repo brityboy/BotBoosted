@@ -300,7 +300,7 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
         # tweet_dict['exemplary_tweet'][i] = exemplary_tweet
         tweet_dict['exemplary_tweet'][i] = blockify_tweet(exemplary_tweet)
         top_words = \
-            bag_of_words[np.argsort(word_importance*H[i])[::-1]][:5]
+            bag_of_words[np.argsort(word_importance*H[i])[::-1]][:3]
         tweet_dict['top_words'][i] = ', '.join(top_words)
         subset_pct = round(float(nsubtweets)/ntweets*100, 2)
         tweet_dict['topic_size_pct'][i] = subset_pct
