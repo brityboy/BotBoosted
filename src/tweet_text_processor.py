@@ -631,7 +631,7 @@ def make_stacked_barplot(rf_df, tweet_dict):
     real_tweets = rf_df.real.values
     ind = np.arange(N)
     width = 0.35
-    p1 = plt.bar(ind, fake_tweets, width, color='.4')
+    p1 = plt.bar(ind, fake_tweets, width, color='.55')
     p2 = plt.bar(ind, real_tweets, width, color='y', bottom=fake_tweets)
     plt.ylabel('Count of Tweets')
     plt.suptitle('Breakdown of Tweets by Topic, and by Real/Fake', fontsize=14,
