@@ -15,7 +15,6 @@ from scipy import sparse
 from sklearn.naive_bayes import MultinomialNB
 from corpus_explorer import plot_topics, plot_all_tweets
 import matplotlib.pyplot as plt
-import mpld3
 
 
 def blockify_tweet(tweet):
@@ -383,7 +382,8 @@ def extract_tweets_from_dataframe(df, verbose=False):
     del tweet_dict
 
 
-def extract_tweets_from_dataframe_for_barplots(df, verbose=False):
+def extract_tweets_from_dataframe_for_barplots(df, verbose=False,
+                                               searchQuery='Your Topic'):
     '''
     INPUT
          - df - dataframe
@@ -435,8 +435,8 @@ def extract_tweets_from_dataframe_for_barplots(df, verbose=False):
     if verbose:
         print("fetching took: ", time.time() - start)
     rf_df = compute_real_and_fake_tweets_within_each_topics(topic_label, df)
-    make_stacked_barplot(rf_df, tweet_dict)
-    make_stacked_barplot_percentage(rf_df, tweet_dict)
+    make_stacked_barplot(rf_df, tweet_dict, searchQuery=searchQuery)
+    make_stacked_barplot_percentage(rf_df, tweet_dict, searchQuery=searchQuery)
     del W
     del H
     del tfidf
@@ -501,13 +501,16 @@ def compute_real_and_fake_tweets_within_each_topics(topic_label, df):
     return rf_df.sort_values(by='total', ascending=False)
 
 
-def process_real_and_fake_tweets_w_plots(df, verbose=False):
+def process_real_and_fake_tweets_w_plots(df, verbose=False,
+                                         searchQuery='Your Topic'):
     '''
     INPUT
          - dataframe - must have the screen_name, the text, and the
          pred value for a user so that it can be processed for
          real and fake tweet exploration
          - verbose: set this to true for it to print the output
+         - searchQuery - this is an optional item that is used for web searched
+         topics so that the query appears in the plot titles
     OUTPUT
          - plots a stacked bar plot that shows the different main topics,
          as well as the number of fake and real tweets within each topic
@@ -524,7 +527,8 @@ def process_real_and_fake_tweets_w_plots(df, verbose=False):
     if verbose:
         print('there are {} fake tweets in this query'.format(fake_tweets))
         print('there are {} real tweets in this query'.format(real_tweets))
-    extract_tweets_from_dataframe_for_barplots(df, verbose=verbose)
+    extract_tweets_from_dataframe_for_barplots(df, verbose=verbose,
+                                               searchQuery=searchQuery)
 
 
 def get_important_tweets_and_words_for_barplot(tfidf, H, W, tfidf_matrix,
@@ -614,12 +618,13 @@ def make_xtick_labels_with_top_words(rf_df, tweet_dict):
     return x_ticks
 
 
-def make_stacked_barplot(rf_df, tweet_dict):
+def make_stacked_barplot(rf_df, tweet_dict, searchQuery='Your Topic'):
     '''
     INPUT
          - rf_df: columns are label, fake, real, and the total number of tweets
          - tweet_dict: dictionary that contains important information about the
          extracted tweets
+         - searchQuery - string, to add to the plot supertitle
     OUTPUT
          - plots a stacked barplot
     Returns none
@@ -635,8 +640,8 @@ def make_stacked_barplot(rf_df, tweet_dict):
     p1 = plt.bar(ind, fake_tweets, width, color='.55')
     p2 = plt.bar(ind, real_tweets, width, color='y', bottom=fake_tweets)
     plt.ylabel('Count of Tweets')
-    plt.suptitle('Breakdown of Tweets by Topic, and by Real/Fake', fontsize=14,
-                 fontweight='bold')
+    plt.suptitle('Tweets by Topic, by Real/Fake, for: {}'.format(searchQuery),
+                 fontsize=14, fontweight='bold')
     plt.subplots_adjust(top=0.85)
     plt.title('There are {} fake tweets and {} real tweets'.format(total_fake,
                                                                    total_real))
@@ -648,12 +653,14 @@ def make_stacked_barplot(rf_df, tweet_dict):
     plt.show()
 
 
-def make_stacked_barplot_percentage(rf_df, tweet_dict):
+def make_stacked_barplot_percentage(rf_df, tweet_dict,
+                                    searchQuery='Your Topic'):
     '''
     INPUT
          - rf_df: columns are label, fake, real, and the total number of tweets
          - tweet_dict: dictionary that contains important information about the
          extracted tweets
+         - searchQuery - string, to add to the plot supertitle
     OUTPUT
          - plots a stacked barplot
     Returns none
@@ -661,7 +668,7 @@ def make_stacked_barplot_percentage(rf_df, tweet_dict):
     x_ticks = make_xtick_labels_with_top_words(rf_df, tweet_dict)
     rf_df['fake_pct'] = (rf_df.fake/rf_df.total)*100
     rf_df['real_pct'] = (rf_df.real/rf_df.total)*100
-    total_tweets = df.shape[0]
+    total_tweets = np.sum(rf_df.total.values)
     total_fake = round(np.sum(rf_df.fake.values)/float(total_tweets), 2)*100
     total_real = round(np.sum(rf_df.real.values)/float(total_tweets), 2)*100
     N = len(rf_df.label.values)
@@ -670,8 +677,8 @@ def make_stacked_barplot_percentage(rf_df, tweet_dict):
     ind = np.arange(N)
     width = 0.35
     fig = plt.figure()
-    fig.suptitle('Percentage of FAKE/REAL Tweets in Each Topic', fontsize=14,
-                 fontweight='bold')
+    fig.suptitle('Fake:Real Tweets / Topic Percent for {}'.format(searchQuery),
+                 fontsize=14, fontweight='bold')
     ax = fig.add_subplot(111)
     fig.subplots_adjust(top=0.85)
     title_string = 'On Average, {} Percent are Fake, {} Percent are Real'
@@ -714,8 +721,8 @@ def get_fake_and_real_top_tweets(rf_df, tweet_dict):
 
 if __name__ == "__main__":
     verbose = True
-    df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
-    # df = pd.read_csv('data/trump_predicted_tweets_v2.csv')
+    # df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
+    df = pd.read_csv('data/trump_predicted_tweets_v2.csv')
     # process_real_and_fake_tweets(df, verbose=True)
     # tweet_dict = extract_tweets_from_dataframe(df, verbose=True)
     # process_real_and_fake_tweets_w_plots(df, verbose=False)
@@ -763,5 +770,8 @@ if __name__ == "__main__":
     if verbose:
         print("fetching took: ", time.time() - start)
     rf_df = compute_real_and_fake_tweets_within_each_topics(topic_label, df)
-    make_stacked_barplot(rf_df, tweet_dict)
-    make_stacked_barplot_percentage(rf_df, tweet_dict)
+    del df
+    make_stacked_barplot(rf_df, tweet_dict,
+                         searchQuery='donald trump sexual assault')
+    make_stacked_barplot_percentage(rf_df, tweet_dict,
+                                    searchQuery='donald trump sexual assault')
