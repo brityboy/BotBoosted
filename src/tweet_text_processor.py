@@ -14,6 +14,7 @@ from collections import defaultdict
 from scipy import sparse
 from sklearn.naive_bayes import MultinomialNB
 from corpus_explorer import plot_topics, plot_all_tweets
+import matplotlib.pyplot as plt
 
 
 def blockify_tweet(tweet):
@@ -325,6 +326,8 @@ def extract_tweets_from_dataframe(df, verbose=False):
          - df - dataframe
     OUTPUT
          - prints the top tweets from a dataframe given the topic-count
+         and plots them on PC1 and PC2 in order to understand the tweets
+         inside the topic
 
     Return nothing
     '''
@@ -346,7 +349,7 @@ def extract_tweets_from_dataframe(df, verbose=False):
         print("vectorizing took: ", time.time() - start)
         print('extracting topics...')
         start = time.time()
-    pnmf = ParetoNMF(noise_pct=.20, step=1, pnmf_verbose=True)
+    pnmf = ParetoNMF(noise_pct=.20, step=1, pnmf_verbose=verbose)
     pnmf.evaluate(tfidf_matrix)
     W = pnmf.nmf.transform(tfidf_matrix)
     H = pnmf.nmf.components_
@@ -372,6 +375,65 @@ def extract_tweets_from_dataframe(df, verbose=False):
         print("fetching took: ", time.time() - start)
     plot_topics(H, tweet_dict)
     plot_all_tweets(W, topic_label, tweet_dict)
+    del W
+    del H
+    del tfidf
+    del pnmf
+    del tweet_dict
+
+
+def extract_tweets_from_dataframe_for_barplots(df, verbose=False):
+    '''
+    INPUT
+         - df - dataframe
+    OUTPUT
+         - plots
+
+    Return nothing
+    '''
+    df.text = df.text.apply(str)
+    df['length'] = df.text.apply(len)
+    df = df.query('length > 1')
+    if verbose:
+        print('tokenizing tweets...')
+        start = time.time()
+    documents = [document for document in
+                 df.text.values if type(document) == str]
+    tokenized_tweets = multiprocess_tokenize_tweet(documents)
+    if verbose:
+        print("tokenizing the tweets took: ", time.time() - start)
+        print('creating the tfidf_matrix...')
+        start = time.time()
+    tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
+    if verbose:
+        print("vectorizing took: ", time.time() - start)
+        print('extracting topics...')
+        start = time.time()
+    pnmf = ParetoNMF(noise_pct=.20, step=2, pnmf_verbose=verbose)
+    pnmf.evaluate(tfidf_matrix)
+    W = pnmf.nmf.transform(tfidf_matrix)
+    H = pnmf.nmf.components_
+    topic_label = np.apply_along_axis(func1d=np.argmax,
+                                      axis=1, arr=W)
+    if verbose:
+        print("extracted {} topics: "
+              .format(pnmf.topic_count), time.time() - start)
+        print('determining important words...')
+        start = time.time()
+    word_importance = compute_for_word_importance(tfidf_matrix, topic_label)
+    if verbose:
+        print("word importance computations took: ", time.time() - start)
+        print('fetching important tweets...')
+        start = time.time()
+    tweet_dict = get_most_important_tweets_and_words_per_topic(tfidf, H, W,
+                                                               tfidf_matrix,
+                                                               topic_label,
+                                                               word_importance,
+                                                               documents,
+                                                               verbose=verbose)
+    if verbose:
+        print("fetching took: ", time.time() - start)
+
     del W
     del H
     del tfidf
@@ -409,8 +471,134 @@ def process_real_and_fake_tweets(df, verbose=False):
         extract_tweets_from_dataframe(realdf, verbose=verbose)
 
 
+def compute_real_and_fake_tweets_within_each_topics(topic_label, df):
+    '''
+    INPUT
+         - topic_label - an array that has the soft cluster topic label
+         for each tweets
+         - df - which has the ff columns: user_id, tweet, pred
+    OUTPUT
+         - dataframe
+    Returns a dataframe with four columns: label, real, fake, and total where
+    the values beneath real, fake, and total are the number of tweets in those
+    topics groups
+    '''
+    pred_values = df.pred.values
+    unique_topics = np.unique(topic_label)
+    total_fake = []
+    total_real = []
+    rf_df = pd.DataFrame(unique_topics, columns=['label'])
+    for topic in unique_topics:
+        pred_subset = pred_values[topic_label == topic]
+        total_fake.append(np.sum(pred_subset == 1))
+        total_real.append(np.sum(pred_subset == 0))
+    rf_df['fake'] = total_fake
+    rf_df['real'] = total_real
+    rf_df['total'] = rf_df.fake + rf_df.real
+    return rf_df.sort_values(by='total', ascending=False)
+
+
+def process_real_and_fake_tweets_w_plots(df, verbose=False):
+    '''
+    INPUT
+         - dataframe - must have the screen_name, the text, and the
+         pred value for a user so that it can be processed for
+         real and fake tweet exploration
+         - verbose: set this to true for it to print the output
+    OUTPUT
+         - plots a stacked bar plot that shows the different main topics,
+         as well as the number of fake and real tweets within each topic
+
+    Returns none
+    '''
+    df.text = df.text.apply(str)
+    df['length'] = df.text.apply(len)
+    df = df.query('length > 1')
+    if verbose:
+        print('we are going to process {} tweets'.format(df.shape[0]))
+    fake_tweets = np.sum(df.pred.values == 1)
+    real_tweets = np.sum(df.pred.values == 0)
+    if verbose:
+        print('there are {} fake tweets in this query'.format(fake_tweets))
+        print('there are {} real tweets in this query'.format(real_tweets))
+    extract_tweets_from_dataframe_for_barplots(df, verbose=verbose)
+
+
+def make_stacked_barplot(rf_df, tweet_dict):
+    '''
+    INPUT
+         - rf_df: columns are label, fake, real, and the total number of tweets
+         - tweet_dict: dictionary that contains important information about the
+         extracted tweets
+    OUTPUT
+         - plots a stacked barplot
+    Returns none
+    '''
+    total_fake = np.sum(rf_df.fake.values)
+    total_real = np.sum(rf_df.real.values)
+    N = len(rf_df.label.values)
+    menMeans = rf_df.fake.values
+    womenMeans = rf_df.real.values
+    ind = np.arange(N)
+    width = 0.35
+    p1 = plt.bar(ind, menMeans, width, color='r')
+    p2 = plt.bar(ind, womenMeans, width, color='y', bottom=menMeans)
+    plt.ylabel('Tweets')
+    plt.title('There are {} fake tweets and {} real tweets'.format(total_fake,
+                                                                   total_real))
+    plt.xticks(ind + width/2., ('G1', 'G2', 'G3', 'G4', 'G5'))
+    plt.legend((p2[0], p1[0]), ('Real', 'Fake'))
+    plt.show()
+
+
 if __name__ == "__main__":
+    verbose = True
     df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
     # df = pd.read_csv('data/trump_predicted_tweets_v2.csv')
-    process_real_and_fake_tweets(df, verbose=True)
+    # process_real_and_fake_tweets(df, verbose=True)
     # tweet_dict = extract_tweets_from_dataframe(df, verbose=True)
+    # process_real_and_fake_tweets_w_plots(df, verbose=False)
+    df.text = df.text.apply(str)
+    df['length'] = df.text.apply(len)
+    df = df.query('length > 1')
+    if verbose:
+        print('tokenizing tweets...')
+        start = time.time()
+    documents = [document for document in
+                 df.text.values if type(document) == str]
+    tokenized_tweets = multiprocess_tokenize_tweet(documents)
+    if verbose:
+        print("tokenizing the tweets took: ", time.time() - start)
+        print('creating the tfidf_matrix...')
+        start = time.time()
+    tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
+    if verbose:
+        print("vectorizing took: ", time.time() - start)
+        print('extracting topics...')
+        start = time.time()
+    pnmf = ParetoNMF(noise_pct=.20, step=2, pnmf_verbose=True)
+    pnmf.evaluate(tfidf_matrix)
+    W = pnmf.nmf.transform(tfidf_matrix)
+    H = pnmf.nmf.components_
+    topic_label = np.apply_along_axis(func1d=np.argmax,
+                                      axis=1, arr=W)
+    rf_df = compute_real_and_fake_tweets_within_each_topics(topic_label, df)
+    if verbose:
+        print("extracted {} topics: "
+              .format(pnmf.topic_count), time.time() - start)
+        print('determining important words...')
+        start = time.time()
+    word_importance = compute_for_word_importance(tfidf_matrix, topic_label)
+    if verbose:
+        print("word importance computations took: ", time.time() - start)
+        print('fetching important tweets...')
+        start = time.time()
+    tweet_dict = get_most_important_tweets_and_words_per_topic(tfidf, H, W,
+                                                               tfidf_matrix,
+                                                               topic_label,
+                                                               word_importance,
+                                                               documents,
+                                                               verbose=verbose)
+    if verbose:
+        print("fetching took: ", time.time() - start)
+    make_stacked_barplot(rf_df, tweet_dict)
