@@ -682,7 +682,33 @@ def make_stacked_barplot_percentage(rf_df, tweet_dict):
     ax.legend((p2[0], p1[0]), ('Real', 'Fake'), fontsize='large')
     ax.grid('off')
     plt.tight_layout()
+    rects = ax.patches
+    labels = get_fake_and_real_top_tweets(rf_df, tweet_dict)
+    for rect, label in zip(rects, labels):
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width()/2, height*.75, label,
+                ha='center', va='bottom', fontsize=12)
     plt.show()
+
+
+def get_fake_and_real_top_tweets(rf_df, tweet_dict):
+    '''
+    INPUT
+         - rf_df: columns are label, fake, real, and the total number of tweets
+         - tweet_dict: dictionary that contains important information about the
+         extracted tweets
+    OUTPUT
+         - a list of tweets that are real and fake, in order of
+         necessary plotting
+    Returns none
+    '''
+    fake_tweet_list = []
+    real_tweet_list = []
+    for topic in rf_df.label.values:
+        fake_tweet_list.append(tweet_dict['exemplary_fake_tweet'][topic])
+        real_tweet_list.append(tweet_dict['exemplary_real_tweet'][topic])
+    return fake_tweet_list+real_tweet_list
+
 
 if __name__ == "__main__":
     verbose = True
