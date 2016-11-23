@@ -667,18 +667,20 @@ def make_stacked_barplot_percentage(rf_df, tweet_dict):
     real_tweets = rf_df.real_pct.values
     ind = np.arange(N)
     width = 0.35
+    fig = plt.figure()
+    fig.suptitle('Percentage of FAKE/REAL Tweets in Each Topic', fontsize=14,
+                 fontweight='bold')
+    ax = fig.add_subplot(111)
+    fig.subplots_adjust(top=0.85)
+    title_string = 'On Average, {} Percent are Fake, {} Percent are Real'
+    ax.set_title(title_string.format(total_fake, total_real))
     p1 = plt.bar(ind, fake_tweets, width, color='.4')
     p2 = plt.bar(ind, real_tweets, width, color='y', bottom=fake_tweets)
-    plt.ylabel('Percent of Tweets in a Topic')
-    plt.suptitle('Percentage of FAKE/REAL Tweets in Each Topic', fontsize=14,
-                 fontweight='bold')
-    plt.subplots_adjust(top=0.85)
-    title_string = '{} percent of tweets are Fake, {} percent are Real'
-    plt.title(title_string.format(total_fake, total_real))
+    ax.set_ylabel('Percent of Tweets in a Topic')
     plt.xticks(ind + width/2., x_ticks)
     plt.tick_params(axis='both', which='major', labelsize=14)
-    plt.legend((p2[0], p1[0]), ('Real', 'Fake'), fontsize='large')
-    plt.grid('off')
+    ax.legend((p2[0], p1[0]), ('Real', 'Fake'), fontsize='large')
+    ax.grid('off')
     plt.tight_layout()
     plt.show()
 
