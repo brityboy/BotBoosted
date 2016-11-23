@@ -139,7 +139,8 @@ def botboosted_demonstration_v2(dbname, collection, verbose=True):
         print("entire thing took: ", time.time() - totalstart)
 
 
-def botboosted_demonstration_v3(dbname, collection, verbose=True):
+def botboosted_demonstration_v3(dbname, collection, verbose=True,
+                                searchQuery='Your Topic'):
     '''
     INPUT
          - dbname - the name of teh mongodb to connect to
@@ -172,7 +173,8 @@ def botboosted_demonstration_v3(dbname, collection, verbose=True):
     if verbose:
         del tweet_list
         print("making predictions took: ", time.time() - start)
-    process_real_and_fake_tweets_w_plots(predicted_tweets, verbose=verbose)
+    process_real_and_fake_tweets_w_plots(predicted_tweets, verbose=verbose,
+                                         searchQuery=searchQuery)
     if verbose:
         print('\n')
         print("entire thing took: ", time.time() - totalstart)
@@ -264,13 +266,16 @@ def botboosted_v3(searchQuery, verbose=False):
     predicted_tweets = make_lightweight_predictions_v2(tweet_list)
     if verbose:
         print("making predictions took: ", time.time() - start)
-    process_real_and_fake_tweets_w_plots(predicted_tweets, verbose=verbose)
+    process_real_and_fake_tweets_w_plots(predicted_tweets, verbose=verbose,
+                                         searchQuery=searchQuery)
     if verbose:
         print('\n')
         print("entire thing took: ", time.time() - totalstart)
 
 if __name__ == "__main__":
-    botboosted_v3('make america great again', verbose=True)
-    botboosted_demonstration_v3('trumpmillion',
-                                'topictweets',
-                                verbose=True)
+    botboosted_v3('donald trump snl',
+                  verbose=True)
+    # botboosted_demonstration_v3('spammytweets',
+    #                             'loseweight',
+    #                             verbose=True,
+    #                             searchQuery='lose weight fast')
