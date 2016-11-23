@@ -14,6 +14,7 @@ from collections import defaultdict
 # from corpus_explorer import visualize_topics, visualize_tweets
 from scipy import sparse
 from sklearn.naive_bayes import MultinomialNB
+from corpus_explorer import plot_topics, plot_all_tweets
 
 
 def blockify_tweet(tweet):
@@ -370,11 +371,13 @@ def extract_tweets_from_dataframe(df, verbose=False):
                                                                verbose=verbose)
     if verbose:
         print("fetching took: ", time.time() - start)
+    plot_topics(H, tweet_dict)
+    plot_all_tweets(W, topic_label, tweet_dict)
     del W
     del H
     del tfidf
     del pnmf
-    return tweet_dict
+    del tweet_dict
 
 
 def process_real_and_fake_tweets(df, verbose=False):
@@ -410,5 +413,5 @@ def process_real_and_fake_tweets(df, verbose=False):
 if __name__ == "__main__":
     df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
     # df = pd.read_csv('data/trump_predicted_tweets_v2.csv')
-    # process_real_and_fake_tweets(df, verbose=True)
-    tweet_dict = extract_tweets_from_dataframe(df, verbose=True)
+    process_real_and_fake_tweets(df, verbose=True)
+    # tweet_dict = extract_tweets_from_dataframe(df, verbose=True)
