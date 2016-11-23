@@ -56,7 +56,9 @@ def botboosted_demonstration(searchQuery):
     INPUT
          - searchQuery - string
     OUTPUT
-         - entire pipeline
+         - predictions on whether or not tweets are real or fake,
+         and printouts of the top words and top tweets within the
+         real and fake world
     Returns none
     '''
     client = MongoClient()
@@ -100,9 +102,13 @@ def botboosted_demonstration(searchQuery):
 def botboosted_demonstration_v2(dbname, collection, verbose=True):
     '''
     INPUT
-         - searchQuery - string
+         - dbname - the name of teh mongodb to connect to
+         - collection - the name of the collection in that db to access
+         - verbose - boolean, whether to print out all outputs or not
     OUTPUT
-         - entire pipeline
+         - predictions on whether or not tweets are real or fake,
+         and printouts of the top words and top tweets within the
+         real and fake world
     Returns none
     '''
     client = MongoClient()
@@ -110,12 +116,6 @@ def botboosted_demonstration_v2(dbname, collection, verbose=True):
         totalstart = time.time()
         print('loading model...')
         start = time.time()
-    # history_model_v2 = \
-    #     load_pickled_model('models/account_history_rf_v2_model.pkl')
-    # behavior_model_v2 = \
-    #     load_pickled_model('models/behavior_rate_rf_v2_model.pkl')
-    # ensemble_model_v2 = \
-    #     load_pickled_model('models/ensemble_rf_v2_model.pkl')
     if verbose:
         print("loading model took: ", time.time() - start)
         print('getting and processing tweets...')
@@ -130,10 +130,6 @@ def botboosted_demonstration_v2(dbname, collection, verbose=True):
         print('making predictions...')
         start = time.time()
     predicted_tweets = make_lightweight_predictions_v2(tweet_list)
-    # predicted_tweets.to_csv('data/clinton_predicted_tweets_v2.csv')
-    # del history_model_v2
-    # del behavior_model_v2
-    # del ensemble_model_v2
     if verbose:
         del tweet_list
         print("making predictions took: ", time.time() - start)
@@ -146,9 +142,12 @@ def botboosted_demonstration_v2(dbname, collection, verbose=True):
 def botboosted_demonstration_v3(dbname, collection, verbose=True):
     '''
     INPUT
-         - searchQuery - string
+         - dbname - the name of teh mongodb to connect to
+         - collection - the name of the collection in that db to access
+         - verbose - boolean, whether to print out all outputs or not
     OUTPUT
-         - entire pipeline
+         - barplots and stacked barplots with representative tweets
+         for that topic
     Returns none
     '''
     client = MongoClient()
@@ -184,15 +183,14 @@ def botboosted(searchQuery):
     INPUT
          - searchQuery - string
     OUTPUT
-         - entire pipeline
+         - predictions on whether or not tweets are real or fake,
+         and printouts of the top words and top tweets within the
+         real and fake world
     Returns none
     '''
     totalstart = time.time()
     print('loading model...')
     start = time.time()
-    # history_model = load_pickled_model('models/account_history_rf_model.pkl')
-    # behavior_model = load_pickled_model('models/behavior_rate_rf_model.pkl')
-    # ensemble_model = load_pickled_model('models/ensemble_rf_model.pkl')
     print("loading model took: ", time.time() - start)
     print('getting and processing tweets...')
     start = time.time()
@@ -212,19 +210,15 @@ def botboosted_v2(searchQuery, verbose=False):
     INPUT
          - searchQuery - string
     OUTPUT
-         - entire pipeline
+         - predictions on whether or not tweets are real or fake,
+         and printouts of the top words and top tweets within the
+         real and fake world
     Returns none
     '''
     if verbose:
         totalstart = time.time()
         print('loading model...')
         start = time.time()
-    # history_model_v2 = \
-    #     load_pickled_model('models/account_history_rf_v2_model.pkl')
-    # behavior_model_v2 = \
-    #     load_pickled_model('models/behavior_rate_rf_v2_model.pkl')
-    # ensemble_model_v2 = \
-    #     load_pickled_model('models/ensemble_rf_v2_model.pkl')
     if verbose:
         print("loading model took: ", time.time() - start)
         print('getting and processing tweets...')
@@ -244,8 +238,39 @@ def botboosted_v2(searchQuery, verbose=False):
         print("entire thing took: ", time.time() - totalstart)
 
 
+def botboosted_v3(searchQuery, verbose=False):
+    '''
+    INPUT
+         - searchQuery - string
+    OUTPUT
+         - barplots and stacked barplots with representative tweets
+         for that topic
+    Returns none
+    '''
+    if verbose:
+        totalstart = time.time()
+        print('loading model...')
+        start = time.time()
+    if verbose:
+        print("loading model took: ", time.time() - start)
+        print('getting and processing tweets...')
+        start = time.time()
+    tweet_list = download_tweets_given_search_query(searchQuery,
+                                                    verbose=verbose)
+    if verbose:
+        print("loading and processing tweet data took: ", time.time() - start)
+        print('making predictions...')
+        start = time.time()
+    predicted_tweets = make_lightweight_predictions_v2(tweet_list)
+    if verbose:
+        print("making predictions took: ", time.time() - start)
+    process_real_and_fake_tweets_w_plots(predicted_tweets, verbose=verbose)
+    if verbose:
+        print('\n')
+        print("entire thing took: ", time.time() - totalstart)
+
 if __name__ == "__main__":
-    # botboosted_v2("make america great again", verbose=True)
+    botboosted_v3('make america great again', verbose=True)
     botboosted_demonstration_v3('trumpmillion',
                                 'topictweets',
                                 verbose=True)
