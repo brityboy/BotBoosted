@@ -1,7 +1,9 @@
 import pandas as pd
-# from tweet_text_processor import multiprocess_tokenize_tweet, tfidf_vectorizer
+# from tweet_text_processor import multiprocess_tokenize_tweet,
+# tfidf_vectorizer
 # from tweet_text_processor import compute_for_word_importance
-# from tweet_text_processor import get_most_important_tweets_and_words_per_topic
+# from tweet_text_processor import \
+# get_most_important_tweets_and_words_per_topic
 import time
 from paretonmf import ParetoNMF
 import numpy as np
@@ -78,11 +80,11 @@ def plot_topics_arrays(H, tweet_dict):
     labels = range(hflat.shape[0])
     fig, ax = plt.subplots()  # set size
     for label, x, y in zip(labels, xs, ys):
-        print('\n')
-        print('name: ', cluster_names[label])
-        print('x: ', x)
-        print('y: ', y)
-        print('\n')
+        # print('\n')
+        # print('name: ', cluster_names[label])
+        # print('x: ', x)
+        # print('y: ', y)
+        # print('\n')
         ax.plot(x, y, marker='o', linestyle='', ms=topic_size[label],
                 label=unidecode(cluster_names[label]),
                 mec='none')
@@ -151,9 +153,9 @@ def plot_topics(H, tweet_dict):
                      title='Top Words Used in the Topics',
                      frameon=False,
                      markerscale=1)
-    for i in range(H.shape[0]):
-        lgnd.legendHandles[i]._legmarker.set_markersize(12)
-        lgnd.legendHandles[i]._legmarker.set_markersize(12)
+    # for i in range(H.shape[0]):
+    #     lgnd.legendHandles[i]._legmarker.set_markersize(12)
+    #     lgnd.legendHandles[i]._legmarker.set_markersize(12)
     plt.show()
 
 
@@ -179,13 +181,13 @@ def plot_all_tweets(W, topic_label, tweet_dict):
     tweet_importance = tweet_dict['tweet_subset_sentimportance']
     clusdf = pd.DataFrame(dict(x=xs, y=ys, label=topic_label))
     groups = clusdf.groupby('label')
-    fig, ax = plt.subplots(figsize=(14,6))
+    fig, ax = plt.subplots(figsize=(14, 6))
     ax.margins(0.03)
     colors = cycle(["r", "b", "g", "c", "m", "y", "k", "w"])
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width*.8, box.height])
     for name, group in groups:
-        print(cluster_names[name])
+        # print(cluster_names[name])
         color = next(colors)
         ax.scatter(group.x, group.y, alpha=1, c=color,
                    label=cluster_names[name], s=4000*tweet_importance[name])
@@ -242,7 +244,7 @@ def plot_all_tweets_draft1(W, topic_label, tweet_dict):
     # iterate through groups to layer the plot
     colors = cycle(["r", "b", "g", "c", "m", "y", "k", "w"])
     for name, group in groups:
-        print(cluster_names[name])
+        # print(cluster_names[name])
         color = next(colors)
         ax.scatter(group.x, group.y, alpha=.1, c=color,
                    label=cluster_names[name], s=4000*tweet_importance[name])
