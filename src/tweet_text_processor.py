@@ -15,6 +15,7 @@ from scipy import sparse
 from sklearn.naive_bayes import MultinomialNB
 from corpus_explorer import plot_topics, plot_all_tweets
 import matplotlib.pyplot as plt
+import mpld3
 
 
 def blockify_tweet(tweet):
@@ -674,7 +675,7 @@ def make_stacked_barplot_percentage(rf_df, tweet_dict):
     fig.subplots_adjust(top=0.85)
     title_string = 'On Average, {} Percent are Fake, {} Percent are Real'
     ax.set_title(title_string.format(total_fake, total_real))
-    p1 = plt.bar(ind, fake_tweets, width, color='.4')
+    p1 = plt.bar(ind, fake_tweets, width, color='.55')
     p2 = plt.bar(ind, real_tweets, width, color='y', bottom=fake_tweets)
     ax.set_ylabel('Percent of Tweets in a Topic')
     plt.xticks(ind + width/2., x_ticks)
