@@ -8,7 +8,7 @@ from collections import Counter
 from unidecode import unidecode
 import multiprocessing as mp
 import time
-from paretonmf import ParetoNMF
+# from paretonmf import ParetoNMF
 from sklearn.ensemble import RandomForestClassifier
 from collections import defaultdict
 from scipy import sparse
