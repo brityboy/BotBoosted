@@ -11,7 +11,6 @@ import time
 from paretonmf import ParetoNMF
 from sklearn.ensemble import RandomForestClassifier
 from collections import defaultdict
-# from corpus_explorer import visualize_topics, visualize_tweets
 from scipy import sparse
 from sklearn.naive_bayes import MultinomialNB
 from corpus_explorer import plot_topics, plot_all_tweets
