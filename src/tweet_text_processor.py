@@ -553,7 +553,7 @@ def get_important_tweets_and_words_for_barplot(tfidf, H, W, tfidf_matrix,
     ntweets = topic_label.shape[0]
     sparse_tfidf = sparse.csr_matrix(tfidf_matrix)
     sentimportance = sparse_tfidf.dot(word_importance)
-    tweetarray = np.array(documents)
+    tweetarray = df.text.values
     for i, unique_topic in enumerate(np.unique(topic_label)):
         subset_tweet_array = tweetarray[topic_label == unique_topic]
         subset_sent_importance = sentimportance[topic_label == unique_topic]
@@ -620,9 +620,13 @@ def make_stacked_barplot(rf_df, tweet_dict):
     p1 = plt.bar(ind, fake_tweets, width, color='.4')
     p2 = plt.bar(ind, real_tweets, width, color='y', bottom=fake_tweets)
     plt.ylabel('Count of Tweets')
+    plt.suptitle('Breakdown of Tweets by Topic, and by Real/Fake', fontsize=14,
+                 fontweight='bold')
+    plt.subplots_adjust(top=0.85)
     plt.title('There are {} fake tweets and {} real tweets'.format(total_fake,
                                                                    total_real))
     plt.xticks(ind + width/2., x_ticks)
+    plt.tick_params(axis='both', which='major', labelsize=14)
     plt.legend((p2[0], p1[0]), ('Real', 'Fake'), fontsize='large')
     plt.grid('off')
     plt.tight_layout()
@@ -653,9 +657,13 @@ def make_stacked_barplot_percentage(rf_df, tweet_dict):
     p1 = plt.bar(ind, fake_tweets, width, color='.4')
     p2 = plt.bar(ind, real_tweets, width, color='y', bottom=fake_tweets)
     plt.ylabel('Percent of Tweets in a Topic')
+    plt.suptitle('Percentage of FAKE/REAL Tweets in Each Topic', fontsize=14,
+                 fontweight='bold')
+    plt.subplots_adjust(top=0.85)
     title_string = '{} percent of tweets are Fake, {} percent are Real'
     plt.title(title_string.format(total_fake, total_real))
     plt.xticks(ind + width/2., x_ticks)
+    plt.tick_params(axis='both', which='major', labelsize=14)
     plt.legend((p2[0], p1[0]), ('Real', 'Fake'), fontsize='large')
     plt.grid('off')
     plt.tight_layout()
