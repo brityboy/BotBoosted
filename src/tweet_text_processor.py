@@ -436,6 +436,7 @@ def extract_tweets_from_dataframe_for_barplots(df, verbose=False):
         print("fetching took: ", time.time() - start)
     rf_df = compute_real_and_fake_tweets_within_each_topics(topic_label, df)
     make_stacked_barplot(rf_df, tweet_dict)
+    make_stacked_barplot_percentage(rf_df, tweet_dict)
     del W
     del H
     del tfidf
