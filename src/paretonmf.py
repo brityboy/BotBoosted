@@ -1,8 +1,10 @@
 import numpy as np
 from sklearn.decomposition import NMF
 from collections import Counter
-# import tweet_text_processor as ttp
+import tweet_text_processor as ttp
 import pandas as pd
+from pymongo import MongoClient
+from unidecode import unidecode
 
 
 class ParetoNMF(object):
@@ -249,11 +251,36 @@ class ParetoNMF(object):
             self.rich_topics = topics_with_rich_content
             return False
 
+
+def create_tweet_list_from_mongo(dbname, collection):
+    '''
+    INPUT
+         - dbname: this is the name of the database
+         to draw the tweets from
+         - collection: this is the name of the collection
+         to draw the tweets from
+    OUTPUT
+         - tweet_list, list
+    Returns tweet_list - the list of tweets in that mongodb
+    '''
+    client = MongoClient()
+    tweet_list = []
+    db = client[dbname]
+    tab = db[collection].find()
+    for document in tab:
+        tweet_list.append(document['text'])
+    tweet_list = [unidecode(document) for document in
+                  tweet_list if
+                  type(unidecode(document)) == str]
+    return tweet_list
+
 if __name__ == "__main__":
-    df = pd.read_csv('data/trumptweets.csv')
+    # df = pd.read_csv('data/trumptweets.csv')
     # documents = [document for document in
-    #              df.text.values if type(document) == str]
-    # tokenized_tweets = ttp.multiprocess_tokenize_tweet(documents)
-    # tfidf, tfidf_matrix = ttp.tfidf_vectorizer(tokenized_tweets)
-    # pnmf = ParetoNMF(pnmf_verbose=True)
-    # n_topics = pnmf.evaluate(tfidf_matrix)
+    #              df.text.values if type(document) == str
+    documents = create_tweet_list_from_mongo('spammytweets',
+                                             'mileycyrus')
+    tokenized_tweets = ttp.multiprocess_tokenize_tweet(documents)
+    tfidf, tfidf_matrix = ttp.tfidf_vectorizer(tokenized_tweets)
+    pnmf = ParetoNMF(pnmf_verbose=True)
+    n_topics = pnmf.evaluate(tfidf_matrix)
