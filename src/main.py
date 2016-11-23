@@ -4,6 +4,7 @@ from prediction_model import load_processed_csv_for_predictions
 from prediction_model import create_dictionary_with_id_and_predictions
 from load_mongo_tweet_data import load_pred_dict_from_pickle, get_tweets
 from tweet_text_processor import process_real_and_fake_tweets
+from tweet_text_processor import process_real_and_fake_tweets_w_plots
 from tweet_scraper import download_tweets_given_search_query
 from lightweight_predictor import make_lightweight_predictions
 from lightweight_predictor import make_lightweight_predictions_v2
@@ -142,6 +143,42 @@ def botboosted_demonstration_v2(dbname, collection, verbose=True):
         print("entire thing took: ", time.time() - totalstart)
 
 
+def botboosted_demonstration_v3(dbname, collection, verbose=True):
+    '''
+    INPUT
+         - searchQuery - string
+    OUTPUT
+         - entire pipeline
+    Returns none
+    '''
+    client = MongoClient()
+    if verbose:
+        totalstart = time.time()
+        print('loading model...')
+        start = time.time()
+    if verbose:
+        print("loading model took: ", time.time() - start)
+        print('getting and processing tweets...')
+        start = time.time()
+    tweet_list = []
+    db = client[dbname]
+    tab = db[collection].find()
+    for document in tab:
+        tweet_list.append(document)
+    if verbose:
+        print("loading and processing tweet data took: ", time.time() - start)
+        print('making predictions...')
+        start = time.time()
+    predicted_tweets = make_lightweight_predictions_v2(tweet_list)
+    if verbose:
+        del tweet_list
+        print("making predictions took: ", time.time() - start)
+    process_real_and_fake_tweets_w_plots(predicted_tweets, verbose=verbose)
+    if verbose:
+        print('\n')
+        print("entire thing took: ", time.time() - totalstart)
+
+
 def botboosted(searchQuery):
     '''
     INPUT
@@ -208,7 +245,7 @@ def botboosted_v2(searchQuery, verbose=False):
 
 
 if __name__ == "__main__":
-    # botboosted_v2("#marcosnohero", verbose=True)
-    botboosted_demonstration_v2('clintonmillion',
+    # botboosted_v2("make america great again", verbose=True)
+    botboosted_demonstration_v3('trumpmillion',
                                 'topictweets',
                                 verbose=True)
