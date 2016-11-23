@@ -555,12 +555,22 @@ def get_important_tweets_and_words_for_barplot(tfidf, H, W, tfidf_matrix,
     sentimportance = sparse_tfidf.dot(word_importance)
     tweetarray = df.text.values
     for i, unique_topic in enumerate(np.unique(topic_label)):
+        subset_pred = df.pred.values[topic_label == unique_topic]
         subset_tweet_array = tweetarray[topic_label == unique_topic]
         subset_sent_importance = sentimportance[topic_label == unique_topic]
         nsubtweets = subset_sent_importance.shape[0]
-        exemplary_tweet = subset_tweet_array[np.argmax(subset_sent_importance)]
-        # tweet_dict['exemplary_tweet'][i] = exemplary_tweet
-        tweet_dict['exemplary_tweet'][i] = blockify_tweet(exemplary_tweet)
+        exemplary_real_tweet = \
+            subset_tweet_array[np.argsort
+                               (subset_sent_importance)
+                               [::-1]][subset_pred == 0][0]
+        exemplary_fake_tweet = \
+            subset_tweet_array[np.argsort
+                               (subset_sent_importance)
+                               [::-1]][subset_pred == 1][0]
+        tweet_dict['exemplary_real_tweet'][i] = \
+            blockify_tweet(exemplary_real_tweet)
+        tweet_dict['exemplary_fake_tweet'][i] = \
+            blockify_tweet(exemplary_fake_tweet)
         top_words = \
             bag_of_words[np.argsort(word_importance*H[i])[::-1]][:5]
         tweet_dict['top_words'][i] = ', '.join(top_words)
@@ -572,8 +582,11 @@ def get_important_tweets_and_words_for_barplot(tfidf, H, W, tfidf_matrix,
         if verbose:
             print('\n')
             print('topic #{}'.format(i+1))
-            print('this is the exemplary tweet from this topic')
-            print(exemplary_tweet)
+            print('this is the exemplary REAL tweet from this topic')
+            print(exemplary_real_tweet)
+            print('\n')
+            print('this is the exemplary FAKE tweet from this topic')
+            print(exemplary_fake_tweet)
             print('\n')
             print('these are the top words from this topic')
             print(top_words)
@@ -715,7 +728,7 @@ if __name__ == "__main__":
                                                             topic_label,
                                                             word_importance,
                                                             df,
-                                                            verbose=False,
+                                                            verbose=True,
                                                             detailed=False)
     if verbose:
         print("fetching took: ", time.time() - start)
