@@ -8,7 +8,7 @@ from collections import Counter
 from unidecode import unidecode
 import multiprocessing as mp
 import time
-from paretonmf import ParetoNMF
+# from paretonmf import ParetoNMF
 from sklearn.ensemble import RandomForestClassifier
 from collections import defaultdict
 from scipy import sparse
@@ -565,14 +565,24 @@ def get_important_tweets_and_words_for_barplot(tfidf, H, W, tfidf_matrix,
         subset_tweet_array = tweetarray[topic_label == unique_topic]
         subset_sent_importance = sentimportance[topic_label == unique_topic]
         nsubtweets = subset_sent_importance.shape[0]
-        exemplary_real_tweet = \
-            subset_tweet_array[np.argsort
-                               (subset_sent_importance)
-                               [::-1]][subset_pred == 0][0]
-        exemplary_fake_tweet = \
-            subset_tweet_array[np.argsort
-                               (subset_sent_importance)
-                               [::-1]][subset_pred == 1][0]
+        if len(subset_tweet_array[np.argsort
+                                  (subset_sent_importance)[::-1]]
+                                 [subset_pred == 0]) == 0:
+            exemplary_real_tweet = 'no real tweets for this subtopic'
+        else:
+            exemplary_real_tweet = \
+                subset_tweet_array[np.argsort
+                                   (subset_sent_importance)
+                                   [::-1]][subset_pred == 0][0]
+        if len(subset_tweet_array[np.argsort
+                                  (subset_sent_importance)[::-1]]
+                                 [subset_pred == 1]) == 0:
+            exemplary_real_tweet = 'no fake tweets for this subtopic'
+        else:
+            exemplary_fake_tweet = \
+                subset_tweet_array[np.argsort
+                                   (subset_sent_importance)
+                                   [::-1]][subset_pred == 1][0]
         tweet_dict['exemplary_real_tweet'][i] = \
             blockify_tweet(exemplary_real_tweet)
         tweet_dict['exemplary_fake_tweet'][i] = \
