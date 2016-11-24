@@ -8,7 +8,7 @@ from collections import Counter
 from unidecode import unidecode
 import multiprocessing as mp
 import time
-# from paretonmf import ParetoNMF
+from paretonmf import ParetoNMF
 from sklearn.ensemble import RandomForestClassifier
 from collections import defaultdict
 from scipy import sparse
@@ -349,7 +349,7 @@ def extract_tweets_from_dataframe(df, verbose=False):
         print("vectorizing took: ", time.time() - start)
         print('extracting topics...')
         start = time.time()
-    pnmf = ParetoNMF(noise_pct=.20, step=1, pnmf_verbose=verbose)
+    pnmf = ParetoNMF(noise_pct=.2, step=1, pnmf_verbose=verbose)
     pnmf.evaluate(tfidf_matrix)
     W = pnmf.nmf.transform(tfidf_matrix)
     H = pnmf.nmf.components_
@@ -410,7 +410,7 @@ def extract_tweets_from_dataframe_for_barplots(df, verbose=False,
         print("vectorizing took: ", time.time() - start)
         print('extracting topics...')
         start = time.time()
-    pnmf = ParetoNMF(noise_pct=.20, step=2, pnmf_verbose=verbose)
+    pnmf = ParetoNMF(noise_pct='auto', step=1, pnmf_verbose=verbose)
     pnmf.evaluate(tfidf_matrix)
     W = pnmf.nmf.transform(tfidf_matrix)
     H = pnmf.nmf.components_
