@@ -3,6 +3,40 @@ import pandas as pd
 import csv
 from collections import Counter
 
+"""
+This module is used to host the different functions that load the training
+data into a single manageable dataframe.
+
+These are a series of helper functions that extract the raw information from
+the training data csv files that were put together by Stefano Cresci,
+Roberto Di Pietro, Marinella Petrocchi, Angelo Spognardi, and Maurizio
+Tesconi for their paper "Fame for sale: efficient detection of fake Twitter
+followers." http://mib.projects.iit.cnr.it/dataset.html is the link to their
+data. The main orientation of this script is to compile the different csv
+files that this research team put together into one single and properly
+labeled csv.
+
+As the dataset I used for this project may not be shared, this module
+only demonstrates the the kind of features and transformations I did with
+this dataset so that should there be anyone who wishes to pursue further
+research in this area, a method already exists for collecting the data
+into a single pandas dataframe
+
+Example:
+    file_list = human_users+fake_users
+    checkdata = get_first_row_of_all_csv_files_in_a_list(file_list)
+    column_list = get_intersection_columns_for_different_csv_files(checkdata)
+    df = extract_columns_from_multiple_csvs(column_list,
+                                            file_list)
+    df.to_csv('data/training_users.csv')
+    file_list = human_tweets+fake_tweets
+    checkdata = get_first_row_of_all_csv_files_in_a_list(file_list)
+    column_list = get_intersection_columns_for_different_csv_files(checkdata)
+    df = extract_columns_from_multiple_csvs(column_list,
+                                            file_list)
+    df.to_csv('data/training_tweets.csv')
+"""
+
 
 ds1_genuine_tweets = 'data/datasets_full.csv/genuine_accounts.csv/tweets.csv'
 ds1_genuine_users = 'data/datasets_full.csv/genuine_accounts.csv/users.csv'
