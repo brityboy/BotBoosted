@@ -276,6 +276,6 @@ if __name__ == "__main__":
     # botboosted_v3('donald trump snl',
     #               verbose=True)
     botboosted_demonstration_v3('spammytweets',
-                                'sextape',
+                                'nowweightloss',
                                 verbose=True,
                                 searchQuery='lose weight now')
