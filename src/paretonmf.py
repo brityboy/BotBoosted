@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.decomposition import NMF
 from collections import Counter
-# from tweet_text_processor import *
+from tweet_text_processor import *
 import pandas as pd
 from pymongo import MongoClient
 from unidecode import unidecode
@@ -193,7 +193,9 @@ class ParetoNMF(object):
         count
         '''
         if self.noise_pct == 'auto':
-            self.noise_pct = self._pareto_corpus_content(matrix, .8)
+            self._pareto_corpus_content(matrix, .8)
+        if self.step == 'auto':
+            self._determine_auto_step_size(matrix)
         if self.pnmf_verbose:
             print('initializing evaluation...')
         self.corpus_count = matrix.shape[0]
@@ -257,7 +259,7 @@ class ParetoNMF(object):
             self.rich_topics = topics_with_rich_content
             return False
 
-    def _pareto_corpus_content(self, tfidf_matrix, n_percent):
+    def _pareto_corpus_content(self, matrix, n_percent):
         '''
         INPUT
              - tfidf_matrix: this is a sparse matrix made
@@ -272,16 +274,30 @@ class ParetoNMF(object):
         tail of the information, which is the inverse of the precent of
         documents that contribute to n_percent of the information
         '''
-        sparse_tfidf = sparse.csr_matrix(tfidf_matrix)
-        sparse_tfidf = np.unique(sparse_tfidf)[0]
-        total_documents = sparse_tfidf.shape[0]
-        token_count = np.array(np.sum(sparse_tfidf > 0, axis=1)).T[0]
+        sparse_matrix = sparse.csr_matrix(matrix)
+        sparse_matrix = np.unique(sparse_matrix)[0]
+        total_documents = sparse_matrix.shape[0]
+        token_count = np.array(np.sum(sparse_matrix > 0, axis=1)).T[0]
         sorted_token_count = sorted(token_count, reverse=True)
         total_tokens = np.sum(token_count)
         majority_information = int(total_tokens * n_percent)
         majority_docs = \
             np.sum(np.cumsum(sorted_token_count) < majority_information)
-        return 1-float(majority_docs)/total_documents
+        self.noise_pct = 1-float(majority_docs)/total_documents
+
+    def _determine_auto_step_size(self, matrix):
+        '''
+        INPUT
+             - the matrix
+        OUTPUT
+             - int, the step size to take
+
+        Returns the step size that heuristically can be considered
+        given the shape of the tfidf matrix
+        '''
+        self.step = int(round(float(matrix.shape[1])/matrix.shape[0]))
+        if self.step == 0:
+            self.step = 1
 
 
 def create_tweet_list_from_mongo(dbname, collection):
@@ -309,25 +325,17 @@ def create_tweet_list_from_mongo(dbname, collection):
 
 if __name__ == "__main__":
     df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
+    df.text = df.text.apply(str)
+    df['length'] = df.text.apply(len)
+    df = df.query('length > 1')
     documents = [document for document
                  in df.text.values if type(document) == str]
-    # documents = create_tweet_list_from_mongo('spammytweets', 'sextape')
     tokenized_tweets = multiprocess_tokenize_tweet(documents)
     unique_tweets = np.unique(tokenized_tweets)
-    print(len(unique_tweets))
     tfidf, tfidf_matrix = tfidf_vectorizer(unique_tweets)
-    # noise_pct = compute_for_pareto_document_content(tfidf_matrix, .8)
-    print(tfidf_matrix.shape)
-    # step = tfidf_matrix.shape[0]/tfidf_matrix.shape[1]/2
-    # if step == 0:
-    #     step = 1
-    # print(step)
-    pnmf = ParetoNMF(noise_pct='auto', step=1, pnmf_verbose=True)
-    print(pnmf.step)
+    pnmf = ParetoNMF(noise_pct='auto', step='auto', pnmf_verbose=True)
     n_topics = pnmf.evaluate(tfidf_matrix)
-    print(pnmf.noise_pct)
     tfidf_matrix = tfidf.transform(tokenized_tweets)
-    print(tfidf_matrix.shape)
     W = pnmf.nmf.transform(tfidf_matrix)
     H = pnmf.nmf.components_
     topic_label = np.apply_along_axis(func1d=np.argmax,
@@ -342,6 +350,6 @@ if __name__ == "__main__":
                                                             detailed=False)
     rf_df = compute_real_and_fake_tweets_within_each_topics(topic_label, df)
     make_stacked_barplot(rf_df, tweet_dict,
-                         searchQuery='donald trump sexual assault')
+                         searchQuery='racism')
     make_stacked_barplot_percentage(rf_df, tweet_dict,
-                                    searchQuery='donald trump sexual assault')
+                                    searchQuery='racism')
