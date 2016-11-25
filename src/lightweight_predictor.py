@@ -55,7 +55,8 @@ def make_lightweight_predictions_v2(tweet_list):
     Returns a prediction for each tweet as to whether it is real or fake
     '''
     start = time.time()
-    processed_tweets = np.array([process_tweet_v2(tweet) for tweet in tweet_list])
+    processed_tweets = np.array([process_tweet_v2(tweet)
+                                 for tweet in tweet_list])
     tweet_history = processed_tweets[:, :23].astype(float)
     tweets = processed_tweets[:, 23:]
     tweet_behavior = \
