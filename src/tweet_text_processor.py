@@ -8,7 +8,7 @@ from collections import Counter
 from unidecode import unidecode
 import multiprocessing as mp
 import time
-# from paretonmf import ParetoNMF
+from paretonmf import ParetoNMF
 from sklearn.ensemble import RandomForestClassifier
 from collections import defaultdict
 from scipy import sparse
@@ -387,35 +387,17 @@ def extract_tweets_from_dataframe_for_barplots(df, verbose=False,
     '''
     INPUT
          - df - dataframe
+         - verbose - this is a setting to see the progress
+         - searchQuery -
     OUTPUT
-         - plots
+         - plots the distribution stacked barplot and the
+         percentage stacked barplot of the different tweets
 
     Return nothing
     '''
+    W, H, topic_label, tfidf, tfidf_matrix = \
+        process_unique_tweets_through_paretonmf(df, verbose=verbose)
     if verbose:
-        print('tokenizing tweets...')
-        start = time.time()
-    documents = [document for document in
-                 df.text.values if type(document) == str]
-    tokenized_tweets = multiprocess_tokenize_tweet(documents)
-    if verbose:
-        print("tokenizing the tweets took: ", time.time() - start)
-        print('creating the tfidf_matrix...')
-        start = time.time()
-    tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
-    if verbose:
-        print("vectorizing took: ", time.time() - start)
-        print('extracting topics...')
-        start = time.time()
-    pnmf = ParetoNMF(noise_pct='auto', step=1, pnmf_verbose=verbose)
-    pnmf.evaluate(tfidf_matrix)
-    W = pnmf.nmf.transform(tfidf_matrix)
-    H = pnmf.nmf.components_
-    topic_label = np.apply_along_axis(func1d=np.argmax,
-                                      axis=1, arr=W)
-    if verbose:
-        print("extracted {} topics: "
-              .format(pnmf.topic_count), time.time() - start)
         print('determining important words...')
         start = time.time()
     word_importance = compute_for_word_importance(tfidf_matrix, topic_label)
@@ -437,7 +419,6 @@ def extract_tweets_from_dataframe_for_barplots(df, verbose=False,
     del W
     del H
     del tfidf
-    del pnmf
     del tweet_dict
 
 
@@ -730,17 +711,22 @@ def get_fake_and_real_top_tweets(rf_df, tweet_dict):
     return fake_tweet_list+real_tweet_list
 
 
-def process_unique_tweets_through_paretonmf(df):
+def process_unique_tweets_through_paretonmf(df, verbose=False):
     '''
     INPUT
          - df: dataframe that has all of the predicted
          tweets for processing (has the user's screen_name, the
          tweet text, and the prediction for whether they are real
          or fake)
+         - verbose: setting to view the progress inside this function
     OUTPUT
          - W: 2d matrix of tweets and the reduced dimension of topics
          - H: 2d matrix of topics and the tokens
          - topic_label: 1d array
+         - tfidf: tfidf fit object
+         - tfidf_matrix: compressed sparse row matrix holding the
+         tfidf values
+
     Processed the unique tweets inside the corpus of tweets such that
     topic extraction models the unique strings rather than modeling the
     corpus that has many identical tweets (due to retweets, etc). After
@@ -748,74 +734,40 @@ def process_unique_tweets_through_paretonmf(df):
     this function will soft cluster the entire corpus to the topics
     using the nmf object that modeled the unique tweets
     '''
+    if verbose:
+        print('tokenizing tweets...')
+        start = time.time()
     documents = [document for document
                  in df.text.values if type(document) == str]
     tokenized_tweets = multiprocess_tokenize_tweet(documents)
     unique_tweets = np.unique(tokenized_tweets)
+    if verbose:
+        print("tokenizing the tweets took: ", time.time() - start)
+        print('creating the tfidf_matrix...')
+        start = time.time()
     tfidf, tfidf_matrix = tfidf_vectorizer(unique_tweets)
-    pnmf = ParetoNMF(noise_pct='auto', step='auto', pnmf_verbose=True)
+    if verbose:
+        print("vectorizing took: ", time.time() - start)
+        print('extracting topics...')
+        start = time.time()
+    pnmf = ParetoNMF(noise_pct='auto', step='auto', pnmf_verbose=verbose)
     pnmf.evaluate(tfidf_matrix)
+    if verbose:
+        print("extracted {} topics: "
+              .format(pnmf.topic_count), time.time() - start)
+        print('vectorizing the entire corpus and soft clustering tweets...')
     tfidf_matrix = tfidf.transform(tokenized_tweets)
     W = pnmf.nmf.transform(tfidf_matrix)
     H = pnmf.nmf.components_
     topic_label = np.apply_along_axis(func1d=np.argmax,
                                       axis=1, arr=W)
-    return W, H, topic_label
+    if verbose:
+        print("vectorizing and soft clustering took: "
+              .format(pnmf.topic_count), time.time() - start)
+    return W, H, topic_label, tfidf, tfidf_matrix
 
 
 if __name__ == "__main__":
-    verbose = True
-    # df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
-    df = pd.read_csv('data/trump_predicted_tweets_v2.csv')
-    # process_real_and_fake_tweets(df, verbose=True)
-    # tweet_dict = extract_tweets_from_dataframe(df, verbose=True)
-    # process_real_and_fake_tweets_w_plots(df, verbose=False)
-    df.text = df.text.apply(str)
-    df['length'] = df.text.apply(len)
-    df = df.query('length > 1')
-    if verbose:
-        print('tokenizing tweets...')
-        start = time.time()
-    documents = [document for document in
-                 df.text.values if type(document) == str]
-    tokenized_tweets = multiprocess_tokenize_tweet(documents)
-    if verbose:
-        print("tokenizing the tweets took: ", time.time() - start)
-        print('creating the tfidf_matrix...')
-        start = time.time()
-    tfidf, tfidf_matrix = tfidf_vectorizer(tokenized_tweets)
-    if verbose:
-        print("vectorizing took: ", time.time() - start)
-        print('extracting topics...')
-        start = time.time()
-    pnmf = ParetoNMF(noise_pct=.20, step=2, pnmf_verbose=True)
-    pnmf.evaluate(tfidf_matrix)
-    W = pnmf.nmf.transform(tfidf_matrix)
-    H = pnmf.nmf.components_
-    topic_label = np.apply_along_axis(func1d=np.argmax,
-                                      axis=1, arr=W)
-    if verbose:
-        print("extracted {} topics: "
-              .format(pnmf.topic_count), time.time() - start)
-        print('determining important words...')
-        start = time.time()
-    word_importance = compute_for_word_importance(tfidf_matrix, topic_label)
-    if verbose:
-        print("word importance computations took: ", time.time() - start)
-        print('fetching important tweets...')
-        start = time.time()
-    tweet_dict = get_important_tweets_and_words_for_barplot(tfidf, H, W,
-                                                            tfidf_matrix,
-                                                            topic_label,
-                                                            word_importance,
-                                                            df,
-                                                            verbose=True,
-                                                            detailed=False)
-    if verbose:
-        print("fetching took: ", time.time() - start)
-    rf_df = compute_real_and_fake_tweets_within_each_topics(topic_label, df)
-    del df
-    make_stacked_barplot(rf_df, tweet_dict,
-                         searchQuery='donald trump sexual assault')
-    make_stacked_barplot_percentage(rf_df, tweet_dict,
-                                    searchQuery='donald trump sexual assault')
+    df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
+    # df = pd.read_csv('data/trump_predicted_tweets_v2.csv')
+    process_real_and_fake_tweets_w_plots(df, verbose=True)
