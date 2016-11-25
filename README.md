@@ -190,38 +190,46 @@ Aritter. Twitter NLP. (2016). Github repository https://github.com/aritter/twitt
 ### Deprecated Modules
 
 These modules were used in the initial version of this project:
+
 1. classification_model.py
 - this module has the original feature set used by Azab, A., Idrees, A.,
 Mahmoud, M., Hefny, H. in their paper "Fake Account Detection in Twitter Based
 on Minimum Weighted Feature set.". This was deprecated because a more efficient
 method of classifying tweets was developed in the course of this project
+
 2. corpus_explorer.py
 - this module has the initial visualizations that included plotting the different
 topics on PC1 and PC2, as well as the different tweets on PC1 and PC2, but was
 deprecated because a more effective visualization was developed that involved
 stacked barplots
+
 3. evaltestcvbs.py
 - this is a class that analyzes the precision and recall of a classifier
 across different split percentages in the test set in order to gain a better
 understanding of the classifier's performance
+
 4. information_gain_ratio
 - this is a set of functions that compute for the information gain raio
 from Ross Quinlan's C4.5, and was originally intended to be used to determine
 word importance, but was replaced by the feature importance attribute
 from sklearn's random forest
+
 5. optimize_model_ensemble.py
 - this module is used to host a set of functions that would work to get the
 best weightings for the predictors created by the deprecated classification_model.py
 module, and was removed because of the development of the more lightweight
 classifier, the random forest ensemble
+
 6. prediction_model.py
 - this module is used to make predictions using the models made by the
 deprecated classification_model.py module
+
 7. TweetNLP.py
 - this module is a borrowed module from
 Aritter. Twitter NLP. (2016). Github repository https://github.com/aritter/twitter_nlp
 and was deprecated in favor of emoticons and twokenize
-8. load_test_daya.py
+
+8. load_test_data.py
  - this module was used to load class A and class B feature data from a mongodb
  and process them for the predictions that will be made by the deprecated
  classified model module
