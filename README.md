@@ -52,41 +52,17 @@ The backbone of this app is made in python, whose modules are as follows:
       Angelo Spognardi, and Maurizio Tesconi for their paper
       "Fame for sale: efficient detection of fake Twitter followers."
       http://mib.projects.iit.cnr.it/dataset.html is the link to their data.
-      The main orientation of this script is to compile the different csv
+      The main orientation of this module is to compile the different csv
       files that this research team put together into one single and properly
       labeled csv.
 
-2. load_test_data.py
-    - These helper functions load data from a mongo database that has two
-      collections inside it: topictweets and timeline tweets. "topictweets"
-      are tweets taken via the tweepy Twitter API wrapper in python. These
-      tweets were identified by searching about a topic (i.e. "Hillary
-      Clinton Email" or "Donald Trump Sexual Assault" which were hot topics
-      prior to the Nov 8 2016 election). "timelinetweets" are the tweets
-      taken from the timelines of the users who were identified as users
-      who tweeted about the topic (usernames taken from timeline tweets). 200
-      tweets were downloaded per user for the data to demonstrate the
-      classifier and topic modeler's performance on, but 40 is sufficient.
-      The csv file that this script generates already incorporates the
-      features needed from the topictweets and timelinetweets collections
-
 3. process_loaded_data.py
-    - This script takes functions from load_train_data in order to load
+    - This module takes functions from load_train_data in order to load
       information, process the different features into the specific items
       needed by the classifier, and then combines the user information
       with the tweet information into a single csv file named "training_df.csv"
 
-4. classification_model.py
-    - The classification model runs the training_df.csv information through
-      a train test split, random undersampling in order to balance the
-      classes for the information that will be used to train and tune a model
-      and then several evaluation methods on the model that include 5-fold
-      cross validation during gridsearch, and evaluating the performance of
-      the classifier on different random samples of different split levels
-      taken from the model's unseen test data (the class Eval is in
-      evaltestcvbs)
-
-5. lightweight_classifier.py
+4. lightweight_classifier.py
     - Previous research in the area of classifying twitter users as real or
       fake has done so by using class A (lightweight) and class B (costlier)
       features. Lightweight features include everything that you can get
@@ -137,19 +113,13 @@ The backbone of this app is made in python, whose modules are as follows:
       The contribution of this work is that this kind of performance was attained
       using only class A features.
 
-6. evaltestcvbs.py
-    - This is a helper class whose purpose is to evaluate a model's performance
-      with different random samples generated from unseen test data, with the
-      purpose of having a better understanding of the model's average
-      performance on out of sample prediction.
-
-7. lightweight_predictor.py
-    - The objective of this script is to load the random forest ensemble
+5. lightweight_predictor.py
+    - The objective of this module is to load the random forest ensemble
       in order to create a dataframe that has the major information about
       the predicted tweets. This information includes the user's screen_name,
       the tweet itself, and whether the tweet is real or fake
 
-8. tweet_text_processor.py
+6. tweet_text_processor.py
     - These are a series of functions that, at a high level, do the following things:
 
       a) Tokenize Tweets in a Twitter specific way (convert links into "url"),
@@ -171,7 +141,7 @@ The backbone of this app is made in python, whose modules are as follows:
          and a percentage stacked barplot that shows how much of each subtopic
          is real and fake
 
-9. paretonmf.py
+7. paretonmf.py
     - This is the class that dynamically determines a heuristic count of the
       number of topics inside a corpus using Incremental Pareto NMF.
       The three major parameters to tune for this heuristic include the ff:
@@ -184,20 +154,20 @@ The backbone of this app is made in python, whose modules are as follows:
          learning rate, that IPNMF takes in incrementally extracting topics
          from the corpus
 
-10. tweet_scraper.py
-    - This script is responsible for downloading the tweets into a list of
+8. tweet_scraper.py
+    - This module is responsible for downloading the tweets into a list of
       json objects that contain the tweet information as well as the basic
       account history for each user
 
-11. tweet_scrape_processor.py
-    - This script is responsible for processing each json object into the
-      different features necessary for the prediction model script so that
+9. tweet_scrape_processor.py
+    - This module is responsible for processing each json object into the
+      different features necessary for the prediction model module so that
       the random forest ensemble can make predictions on newly downloaded
       tweets, or tweets store in a mongo database, so long as they are
       in the form of json objects in a list
 
-12. main.py
-    - This script integrates all of the different modules into two main functions:
+10. main.py
+    - This module integrates all of the different modules into two main functions:
       a) botboosted_v3 - this function allows a user to specify a search, and then
          this will download the tweets, classify them, and visualize them
          as different subtopics, and summarize them with exemplary tweets
@@ -208,10 +178,10 @@ The backbone of this app is made in python, whose modules are as follows:
 ### Borrowed modules
 
 1. emoticons.py
-- this script uses regex to identify emoticons in a tweet and convert them
+- this module uses regex to identify emoticons in a tweet and convert them
 into the equivalent word (i.e. happy face is replaced with the string "happy")
 2. twokenize.py
-- this script uses regex to identify relevant characters inside a tweet such as
+- this module uses regex to identify relevant characters inside a tweet such as
 the ampersand for mentions or the octothorp for hashtags
 
 These modules were both borrowed from:
@@ -221,12 +191,12 @@ Aritter. Twitter NLP. (2016). Github repository https://github.com/aritter/twitt
 
 These modules were used in the initial version of this project:
 1. classification_model.py
-- this script has the original feature set used by Azab, A., Idrees, A.,
+- this module has the original feature set used by Azab, A., Idrees, A.,
 Mahmoud, M., Hefny, H. in their paper "Fake Account Detection in Twitter Based
 on Minimum Weighted Feature set.". This was deprecated because a more efficient
 method of classifying tweets was developed in the course of this project
 2. corpus_explorer.py
-- this script has the initial visualizations that included plotting the different
+- this module has the initial visualizations that included plotting the different
 topics on PC1 and PC2, as well as the different tweets on PC1 and PC2, but was
 deprecated because a more effective visualization was developed that involved
 stacked barplots
@@ -240,14 +210,18 @@ from Ross Quinlan's C4.5, and was originally intended to be used to determine
 word importance, but was replaced by the feature importance attribute
 from sklearn's random forest
 5. optimize_model_ensemble.py
-- this script is used to host a set of functions that would work to get the
+- this module is used to host a set of functions that would work to get the
 best weightings for the predictors created by the deprecated classification_model.py
-script, and was removed because of the development of the more lightweight
+module, and was removed because of the development of the more lightweight
 classifier, the random forest ensemble
 6. prediction_model.py
-- this script is used to make predictions using the models made by the
-deprecated classification_model.py script
+- this module is used to make predictions using the models made by the
+deprecated classification_model.py module
 7. TweetNLP.py
-- this script is a borrowed script from
+- this module is a borrowed module from
 Aritter. Twitter NLP. (2016). Github repository https://github.com/aritter/twitter_nlp
 and was deprecated in favor of emoticons and twokenize
+8. load_test_daya.py
+ - this module was used to load class A and class B feature data from a mongodb
+ and process them for the predictions that will be made by the deprecated
+ classified model module
