@@ -85,7 +85,6 @@ def download_tweets_to_list(searchQuery, tweetsPerQry,
                 break
             for tweet in new_tweets:
                 tweet_list.append(tweet._json)
-                # tweet_array_list.append(process_tweet(tweet_.json))
             tweetCount += len(new_tweets)
             if verbose:
                 print("Downloaded {0} tweets".format(tweetCount))
@@ -94,13 +93,17 @@ def download_tweets_to_list(searchQuery, tweetsPerQry,
             if verbose:
                 print api.rate_limit_status()['resources']['search'][src][rem]
             max_id = new_tweets[-1].id
-        except:
+        except tweepy.TweepError as e:
             if verbose:
-                print("some error : " + str(e))
+                # print("some error : " + str(e))
+                print e
+                print type(e)
+                print e.__dict__
+                print e.reason
+                print type(e.reason)
             return tweet_list
-    # if verbose:
     print("Downloaded {0} tweets".format(tweetCount))
-    return tweet_list  # , tweet_array_list
+    return tweet_list
 
 
 def download_tweets_given_search_query(searchQuery, verbose=False):
@@ -125,5 +128,5 @@ def download_tweets_given_search_query(searchQuery, verbose=False):
     return tweet_list
 
 if __name__ == "__main__":
-    tweet_list = download_tweets_given_search_query('marcos burial',
-                                                    verbose=False)
+    tweet_list = download_tweets_given_search_query('make america great again',
+                                                    verbose=True)
