@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.decomposition import NMF
 from collections import Counter
-from tweet_text_processor import *
+# from tweet_text_processor import *
 import pandas as pd
 from pymongo import MongoClient
 from unidecode import unidecode
