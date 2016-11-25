@@ -205,6 +205,49 @@ The backbone of this app is made in python, whose modules are as follows:
          function but works on tweets inside a local mongodb rather than
          tweets that are downloaded through twitter's api
 
+### Borrowed modules
+
+1. emoticons.py
+- this script uses regex to identify emoticons in a tweet and convert them
+into the equivalent word (i.e. happy face is replaced with the string "happy")
+2. twokenize.py
+- this script uses regex to identify relevant characters inside a tweet such as
+the ampersand for mentions or the octothorp for hashtags
+
+These modules were both borrowed from:
+Aritter. Twitter NLP. (2016). Github repository https://github.com/aritter/twitter_nlp
+
 ### Deprecated Modules
 
-These modules were used in the initial version 
+These modules were used in the initial version of this project:
+1. classification_model.py
+- this script has the original feature set used by Azab, A., Idrees, A.,
+Mahmoud, M., Hefny, H. in their paper "Fake Account Detection in Twitter Based
+on Minimum Weighted Feature set.". This was deprecated because a more efficient
+method of classifying tweets was developed in the course of this project
+2. corpus_explorer.py
+- this script has the initial visualizations that included plotting the different
+topics on PC1 and PC2, as well as the different tweets on PC1 and PC2, but was
+deprecated because a more effective visualization was developed that involved
+stacked barplots
+3. evaltestcvbs.py
+- this is a class that analyzes the precision and recall of a classifier
+across different split percentages in the test set in order to gain a better
+understanding of the classifier's performance
+4. information_gain_ratio
+- this is a set of functions that compute for the information gain raio
+from Ross Quinlan's C4.5, and was originally intended to be used to determine
+word importance, but was replaced by the feature importance attribute
+from sklearn's random forest
+5. optimize_model_ensemble.py
+- this script is used to host a set of functions that would work to get the
+best weightings for the predictors created by the deprecated classification_model.py
+script, and was removed because of the development of the more lightweight
+classifier, the random forest ensemble
+6. prediction_model.py
+- this script is used to make predictions using the models made by the
+deprecated classification_model.py script
+7. TweetNLP.py
+- this script is a borrowed script from
+Aritter. Twitter NLP. (2016). Github repository https://github.com/aritter/twitter_nlp
+and was deprecated in favor of emoticons and twokenize
