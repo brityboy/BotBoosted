@@ -2,6 +2,33 @@ from load_train_data import extract_columns_from_multiple_csvs
 from collections import defaultdict
 import csv
 
+"""
+This module hosts the functions necessary to engineer the features
+in order to reproduce the feature engineering and prediction model
+done by the team from this paper below.
+
+Azab, A., Idrees, A., Mahmoud, M., Hefny, H. (Nov 1, 2016). Fake Account
+Detection in Twitter Based on Minimum Weighted Feature set. World Academy of
+Science, Engineering and Technology International Journal of Computer,
+Electrical, Automation, Control and Information Engineering Vol:10,
+No:1, 2016. Retrieved from
+http://waset.org/publications/10003176/fake-account-\
+detection-in-twitter-based-on-minimum-weighted-feature-set
+
+This methodology was no longer used as a more lightweight procedure for
+predicting fake and real accounts was developed in the course of this
+research.
+
+All of the functions in this module are, therefore, considered deprecated
+except for the function check_if_many_relative_followers_to_friends
+which is used in the lightweight classifier module
+
+To recreate the dataframe from the research above, one only needs to do:
+
+Example:
+    df = create_processed_dataframe()
+"""
+
 ds1_genuine_tweets = 'data/datasets_full.csv/genuine_accounts.csv/tweets.csv'
 ds1_genuine_users = 'data/datasets_full.csv/genuine_accounts.csv/users.csv'
 ds1_sb1_tweets = 'data/datasets_full.csv/social_spambots_1.csv/tweets.csv'
@@ -34,29 +61,25 @@ fake_users = [ds1_sb1_users, ds1_sb2_users, ds1_sb3_users, ds1_ts1_users,
 
 
 def extract_features_from_tweet_csv_files(csv_list):
-    '''
-    INPUT
-         - csv_list: list of csv files
-    OUTPUT
-         - dictionary
-
-    returns a nested dictionary where the key is the username, the values are
-    the features, and then the values of the feature keys are the values
-    This approach will be taken and multiprocessing and threading
-    will be used if possible in order to speed up the extraction from both
-    the csv files and the mongo databases
-    targets to extract right now are:
-    a) has been included in another user's favorites (favorite_count)
-    get total number of times a users tweet has been
-    favorited (sum favorite_count)
-    csv - favorite_count
-    b) has used a hashtag in the tweet
-    csv - num_hashtags
-    c) has logged into twitter via iphone (source)
-    csv - source
-    d) has mentioned another user
-    csv - num_mentions
-    '''
+    """
+    Args:
+        csv_list (list): list of tweet csv files to be processed
+    Returns:
+        result (dictionary): returns a nested dictionary where the key is
+        the username, the values are the features, and then the values of
+        the feature keys are the values. The ff are the keys of the nested
+        dictionary inside the result dictionary
+        a) favorite_count (int)
+        has been included in another user's favorites (favorite_count)
+        get total number of times a users tweet has been
+        favorited (sum favorite_count)
+        b) num_hashtags (int)
+        number of times the user has used a hashtag in a tweet
+        c) iphone_source (int)
+        number of time the user has logged in with an iphone
+        d) num_mentions (int)
+        number of times the user has mentioned another in a tweet
+    """
     result = defaultdict(defaultdict)
     for csv_file in csv_list:
         print(csv_file)
@@ -121,17 +144,17 @@ def extract_features_from_tweet_csv_files(csv_list):
 
 
 def combine_user_info_with_feature_dict(df, feature_dict):
-    '''
-    INPUT
-         - df: a pandas dataframe that has the information about the users
-         in the 'id' column (this is a mandatory column)
-         - feature_dict: a dictionary where the keys correspond to the ids,
-         and the values correspond to attributes and their values
-    OUTPUT
-         - df
-    Returns an expanded dataframe that has as new columns coming from the
-    feature dict
-    '''
+    """
+    Args
+        df (pandas dataframe): has the information about the users
+        in the 'id' column (this is a mandatory column)
+        feature_dict (dictionary): a dictionary where the keys
+        correspond to the ids, and the values correspond to
+        attributes and their values
+    Returns
+        df (pandas dataframe): Returns an expanded dataframe that has as
+        new columns coming from the feature dict
+    """
     df['twt_favorite_count'] = \
         df.id.apply(lambda user_id: feature_dict[user_id]['favorite_count'])
     df['num_hashtags'] = \
@@ -144,14 +167,14 @@ def combine_user_info_with_feature_dict(df, feature_dict):
 
 
 def check_if_many_relative_followers_to_friends(df):
-    '''
-    INPUT
-         - df: a pandas dataframe joined already with the feature dict
-    OUTPUT
-         - df: a pandas dataframe that has the
-
-    return df which has a new feature: 2*followers_friends
-    '''
+    """
+    Args:
+        df (pandas dataframe): a user info dataframe from the joined
+        function above that is already with the feature dict
+    Returns:
+        df (pandas dataframe): that has a new feature: 2*followers_friends
+        1 if 2 * followers is more than existing friends, and 0 otherwise
+    """
     boolean_list = []
     for followers, friends in zip(df.followers_count.values,
                                   df.friends_count.values):
@@ -164,14 +187,18 @@ def check_if_many_relative_followers_to_friends(df):
 
 
 def process_df(df):
-    '''
-    INPUT
-         - df: a pandas dataframe joined already with the feature dict
-    OUTPUT
-         - df: a pandas dataframe
-
-    returns the pandas dataframe with processed features
-    '''
+    """
+    Args:
+        df (pandas dataframe):  a user info dataframe from the joined
+        function above that is already with the feature dict
+    Returns:
+        df (pandas dataframe): a dataframe with ff processed features:
+        a) has_30_followers (int): 1 if true and 0 otherwise
+        b) geo_localized (int): 1 if true and 0 otherwise
+        c) has_hashtagged (int): 1 if true and 0 otherwise
+        d) used_iphone (int): 1 if true and 0 otherwise
+        e) has_mentions (int): 1 if true and 0 otherwise
+    """
     df['has_30_followers'] = \
         df.followers_count.apply(lambda followers:
                                  1 if int(followers) > 30 else 0)
@@ -191,14 +218,12 @@ def process_df(df):
 
 
 def drop_unnecessary_columns(df):
-    '''
-    INPUT
-         - df: a featurized pandas dataframe
-    OUTPUT
-         - df: a pandas dataframe
-
-    returns the pandas dataframe with the unnecessary features dropped
-    '''
+    """
+    Args:
+        df (pandas dataframe): a featurized pandas dataframe
+    Returns:
+        df (pandas dataframe): a pandas dataframe without the dropped columns
+    """
     df.drop(['geo_enabled', 'followers_count', 'friends_count',
              'statuses_count', 'listed_count', 'favourites_count',
              'created_at', 'file', 'twt_favorite_count', 'num_hashtags',
@@ -207,14 +232,13 @@ def drop_unnecessary_columns(df):
 
 
 def create_processed_dataframe():
-    '''
-    INPUT
-         - none
-    OUTPUT
-         - df: pandas df
-
-    returns a processed pandas dataframe with the features for modelling
-    '''
+    """
+    Args:
+        None
+    Returns:
+         - df (pandas dataframe): a fully processed pandas dataframe
+         with the features ready for modelling
+    """
     column_list = ['id', 'geo_enabled', 'followers_count',
                    'friends_count', 'statuses_count', 'listed_count',
                    'favourites_count', 'created_at']
