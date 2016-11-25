@@ -29,6 +29,7 @@ Example:
     df = extract_columns_from_multiple_csvs(column_list,
                                             file_list)
     df.to_csv('data/training_users.csv')
+
     file_list = human_tweets+fake_tweets
     checkdata = get_first_row_of_all_csv_files_in_a_list(file_list)
     column_list = get_intersection_columns_for_different_csv_files(checkdata)
@@ -96,64 +97,16 @@ label_dict = {ds1_genuine_tweets: 0, ds2_e13_tweets: 0,
               ds2_int_users: 1, ds2_twt_users: 1}
 
 
-def load_data_into_dataframe(filename):
-    '''
-    INPUT
-         - filename: name of file
-    OUTPUT
-         - pandas DataFrame
-
-    returns contents of csv file into a dataframe
-    '''
-    df = pd.read_csv(filename)
-    return df
-
-
-def open_text_file(filename):
-    '''
-    INPUT
-         - filename: name of file
-    OUTPUT
-         - np.array
-
-    returns contents of filename as objects in an array
-    '''
-    text_list = []
-    with open(filename) as f:
-        for line in f:
-            text_list.append(line.replace('\n', ''))
-    return np.array(text_list)
-
-
-def open_csv_file(filename):
-    '''
-    INPUT
-         - filename: name of file
-    OUTPUT
-         - list
-
-    returns csv file rows into a list
-    '''
-    text_list = []
-    with open(filename, 'r') as csvfile:
-        # opencsvfile = csv.reader(codecs.open(filename, 'rU', 'utf-16'))
-        opencsvfile = csv.reader(x.replace('\0', '').replace('\n', '')
-                                 for x in csvfile)
-        for row in opencsvfile:
-            text_list.append(row)
-    return text_list
-
-
 def open_csv_file_as_dataframe(filename):
-    '''
-    INPUT
-         - filename: name of file
-    OUTPUT
-         - pandas dataframe
-
-    returns contents of csv file, null bytes and other items removed
-    in a dataframe, with column headers
-    '''
+    """
+    Args:
+        filename (str): this is the name of the file that will be opened
+        as a dataframe
+    Returns
+        df (pandas DataFrame): contents of csv file, null bytes and other
+        items removed in a dataframe, with column headers which is in the
+        first row of each file
+    """
     text_list = []
     with open(filename, 'r') as csvfile:
         opencsvfile = csv.reader(x.replace('\0', '').replace('\n', '')
@@ -165,29 +118,15 @@ def open_csv_file_as_dataframe(filename):
     return df
 
 
-def give_basic_data_information(filename):
-    '''
-    INPUT
-         - filename: this is the file
-    OUTPUT
-         - prints the head, info and shape of a DataFrame
-
-    returns nothing
-    '''
-    df = open_csv_file_as_dataframe(filename)
-    print(df.head())
-    print(df.info())
-    print(df.shape)
-
-
 def get_first_row_of_all_csv_files_in_a_list(file_list):
-    '''
-    INPUT
-         - file_list: list of csv files
-    OUTPUT
-         - dictionary which has keys as columns and values as number of files
-         these columns occur in
-    '''
+    """
+    Args:
+        file_list (list): list of csv files that will be processed
+    Returns:
+        output_dict (dictionary): where the keys are the columns of the
+        different text files and the values are the number of files
+        these columns occur in
+    """
     output_list = []
     for file_name in file_list:
         with open(file_name, 'r') as f:
@@ -196,17 +135,19 @@ def get_first_row_of_all_csv_files_in_a_list(file_list):
                 replace('\n', '').replace('\r', '').split(',')
 
             output_list += first_line
-    return Counter(output_list)
+    output_dict = Counter(output_list)
+    return output_dict
 
 
 def extract_columns_from_multiple_csvs(column_list, csv_list):
-    '''
-    INPUT
-         - column_list: list of columns to extract from the different csvs
-         - csv_list: list of the different csvs to get the data from
-    OUTPUT
-         - compiled_df: a dataframe that has all the columns from the csvs
-    '''
+    """
+    Args:
+        column_list (list): list of columns to extract from the different csvs
+        csv_list (list): list of the different csvs to get the data from
+    Returns
+        compiled_df (pandas DataFrame): a dataframe that has all the
+        columns from the different csvs
+    """
     compiled_df = pd.DataFrame(columns=np.append(column_list,
                                                  ['file', 'label']))
     for csv_file in csv_list:
@@ -221,27 +162,27 @@ def extract_columns_from_multiple_csvs(column_list, csv_list):
     return compiled_df
 
 
-def get_intersection_columns_for_different_csv_files(checkdata):
-    '''
-    INPUT
-        - checkdata: a dictionary that has the keys as columns and the values
-        as the number of csv files they occur in
-    OUTPUT
-         - column_list: a list of columns that has the columns which occur
-         in all csv files
-    '''
+def get_intersection_columns_for_different_csv_files(output_dict):
+    """
+    Args:
+        output_dict (dictionary): a dictionary that has the keys as
+        columns and the values as the number of csv files they occur in
+    Returns:
+        column_list (list): a list of columns that has the columns which occur
+        in all csv files that will be loaded into a dataframe
+    """
     column_list = []
-    maxval = max(checkdata.values())
-    for k, v in checkdata.iteritems():
+    maxval = max(output_dict.values())
+    for k, v in output_dict.iteritems():
         if v == maxval:
             column_list.append(k)
     return column_list
 
 
 if __name__ == "__main__":
-    column_list = ['user_id', 'favorite_count', 'num_hashtags', 'text',
-                   'source', 'num_mentions', 'timestamp', 'geo', 'place',
-                   'retweet_count', 'reply_count']
+    file_list = human_users+fake_users
+    checkdata = get_first_row_of_all_csv_files_in_a_list(file_list)
+    column_list = get_intersection_columns_for_different_csv_files(checkdata)
     df = extract_columns_from_multiple_csvs(column_list,
-                                            human_tweets+fake_tweets)
-    df.to_csv('data/training_tweets.csv')
+                                            file_list)
+    df.to_csv('data/training_users.csv')
