@@ -35,9 +35,11 @@ one have access to a statistically significant sample of data.
 ### Main Contributions:
 
 Aside from the app prototype, this project makes two major contributions
+
 1. A lightweight classifier that only uses class A features in determining
    whether an account is real or fake, while being as accurate as classification
    models that required class A and class B features
+
 2. A heuristic lightweight model for determining the number of topics in a
   given corpus named Incremental Pareto NMF (IPNMF).
 
@@ -178,10 +180,10 @@ The backbone of this app is made in python, whose modules are as follows:
 ### Borrowed modules
 
 1. emoticons.py
-- this module uses regex to identify emoticons in a tweet and convert them
+this module uses regex to identify emoticons in a tweet and convert them
 into the equivalent word (i.e. happy face is replaced with the string "happy")
 2. twokenize.py
-- this module uses regex to identify relevant characters inside a tweet such as
+this module uses regex to identify relevant characters inside a tweet such as
 the ampersand for mentions or the octothorp for hashtags
 
 These modules were both borrowed from:
