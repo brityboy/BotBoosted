@@ -392,9 +392,6 @@ def extract_tweets_from_dataframe_for_barplots(df, verbose=False,
 
     Return nothing
     '''
-    df.text = df.text.apply(str)
-    df['length'] = df.text.apply(len)
-    df = df.query('length > 1')
     if verbose:
         print('tokenizing tweets...')
         start = time.time()
@@ -456,6 +453,9 @@ def process_real_and_fake_tweets(df, verbose=False):
 
     Returns none
     '''
+    df.text = df.text.apply(str)
+    df['length'] = df.text.apply(len)
+    df = df.query('length > 1')
     if verbose:
         print('we are going to process {} tweets'.format(df.shape[0]))
     fakedf = df.query('pred == 1')
@@ -560,10 +560,10 @@ def get_important_tweets_and_words_for_barplot(tfidf, H, W, tfidf_matrix,
     sparse_tfidf = sparse.csr_matrix(tfidf_matrix)
     sentimportance = sparse_tfidf.dot(word_importance)
     tweetarray = df.text.values
-    for i, unique_topic in enumerate(np.unique(topic_label)):
-        subset_pred = df.pred.values[topic_label == unique_topic]
-        subset_tweet_array = tweetarray[topic_label == unique_topic]
-        subset_sent_importance = sentimportance[topic_label == unique_topic]
+    for topic in np.unique(topic_label):
+        subset_pred = df.pred.values[topic_label == topic]
+        subset_tweet_array = tweetarray[topic_label == topic]
+        subset_sent_importance = sentimportance[topic_label == topic]
         nsubtweets = subset_sent_importance.shape[0]
         if len(subset_tweet_array[np.argsort
                                   (subset_sent_importance)[::-1]]
@@ -583,21 +583,22 @@ def get_important_tweets_and_words_for_barplot(tfidf, H, W, tfidf_matrix,
                 subset_tweet_array[np.argsort
                                    (subset_sent_importance)
                                    [::-1]][subset_pred == 1][0]
-        tweet_dict['exemplary_real_tweet'][i] = \
+        tweet_dict['exemplary_real_tweet'][topic] = \
             blockify_tweet(exemplary_real_tweet)
-        tweet_dict['exemplary_fake_tweet'][i] = \
+        tweet_dict['exemplary_fake_tweet'][topic] = \
             blockify_tweet(exemplary_fake_tweet)
         top_words = \
-            bag_of_words[np.argsort(word_importance*H[i])[::-1]][:5]
-        tweet_dict['top_words'][i] = ', '.join(top_words)
+            bag_of_words[np.argsort(word_importance*H[topic])[::-1]][:5]
+        tweet_dict['top_words'][topic] = ', '.join(top_words)
         subset_pct = round(float(nsubtweets)/ntweets*100, 2)
-        tweet_dict['topic_size_pct'][i] = subset_pct
-        tweet_dict['topic_size_n'][i] = nsubtweets
-        tweet_dict['tweet_subset_sentimportance'][i] = subset_sent_importance
-        tweet_dict['topic_tweets'][i] = subset_tweet_array
+        tweet_dict['topic_size_pct'][topic] = subset_pct
+        tweet_dict['topic_size_n'][topic] = nsubtweets
+        tweet_dict['tweet_subset_sentimportance'][topic] = \
+            subset_sent_importance
+        tweet_dict['topic_tweets'][topic] = subset_tweet_array
         if verbose:
             print('\n')
-            print('topic #{}'.format(i+1))
+            print('topic #{}'.format(topic+1))
             print('this is the exemplary REAL tweet from this topic')
             print(exemplary_real_tweet)
             print('\n')
@@ -705,7 +706,7 @@ def make_stacked_barplot_percentage(rf_df, tweet_dict,
     labels = get_fake_and_real_top_tweets(rf_df, tweet_dict)
     for rect, label in zip(rects, labels):
         height = rect.get_height()
-        ax.text(rect.get_x() + rect.get_width()/2, height*.75, label,
+        ax.text(rect.get_x() + rect.get_width()/2, height*.9, label,
                 ha='center', va='bottom', fontsize=12)
     plt.show()
 
@@ -727,6 +728,39 @@ def get_fake_and_real_top_tweets(rf_df, tweet_dict):
         fake_tweet_list.append(tweet_dict['exemplary_fake_tweet'][topic])
         real_tweet_list.append(tweet_dict['exemplary_real_tweet'][topic])
     return fake_tweet_list+real_tweet_list
+
+
+def process_unique_tweets_through_paretonmf(df):
+    '''
+    INPUT
+         - df: dataframe that has all of the predicted
+         tweets for processing (has the user's screen_name, the
+         tweet text, and the prediction for whether they are real
+         or fake)
+    OUTPUT
+         - W: 2d matrix of tweets and the reduced dimension of topics
+         - H: 2d matrix of topics and the tokens
+         - topic_label: 1d array
+    Processed the unique tweets inside the corpus of tweets such that
+    topic extraction models the unique strings rather than modeling the
+    corpus that has many identical tweets (due to retweets, etc). After
+    determining the number of topics within the unique tweets,
+    this function will soft cluster the entire corpus to the topics
+    using the nmf object that modeled the unique tweets
+    '''
+    documents = [document for document
+                 in df.text.values if type(document) == str]
+    tokenized_tweets = multiprocess_tokenize_tweet(documents)
+    unique_tweets = np.unique(tokenized_tweets)
+    tfidf, tfidf_matrix = tfidf_vectorizer(unique_tweets)
+    pnmf = ParetoNMF(noise_pct='auto', step='auto', pnmf_verbose=True)
+    pnmf.evaluate(tfidf_matrix)
+    tfidf_matrix = tfidf.transform(tokenized_tweets)
+    W = pnmf.nmf.transform(tfidf_matrix)
+    H = pnmf.nmf.components_
+    topic_label = np.apply_along_axis(func1d=np.argmax,
+                                      axis=1, arr=W)
+    return W, H, topic_label
 
 
 if __name__ == "__main__":
