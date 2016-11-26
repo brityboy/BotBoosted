@@ -66,6 +66,11 @@ using only class A features.
 
 To run this, just run the function:
     create_ensemble_model()
+
+Todo:
+    * train the model with more samples from today's set of Twitter's
+    false negatives so that the model can understand the patterns of
+    the spammers of today
 """
 
 
