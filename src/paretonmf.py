@@ -1,17 +1,14 @@
 import numpy as np
 from sklearn.decomposition import NMF
 from collections import Counter
-# from tweet_text_processor import *
-import pandas as pd
-from pymongo import MongoClient
-from unidecode import unidecode
 from scipy import sparse
 
 
 class ParetoNMF(object):
-    '''
-    this is a class that heuristically determines the number of latent topics
-    in a corpus of documents iteratively, founded on the following assumptions
+    """
+    This is a class that heuristically determines the number of latent topics
+    in a corpus of documents iteratively, founded on the following assumptions:
+
     a) n percent of documents within a corpus is noise
     b) more topics extracted from the corpus using NMF if the rich contentrc/
     within a corpus, which makes up 1-n percent of the documents within a
@@ -23,38 +20,48 @@ class ParetoNMF(object):
     d) while there are several topics within a document, a document is assigned
     to fall under a topic based on the topic under which its loading is
     highest along the W matrix
-    '''
+    """
     def __init__(self, noise_pct=.2, step=2, start=2, pnmf_verbose=False,
                  max_steps=100, init='nndsvdar', solver='cd',
                  tol=0.0001, max_iter=200, random_state=None,
                  alpha=0.0, l1_ratio=0.0, shuffle=False,
                  nls_max_iter=2000, sparseness=None, beta=1, eta=0.1,
                  verbose=0):
-        '''
-        INPUT
+        """
+        Args:
             the following are the parameters to tune the model:
 
-            noise_pct (n) - float: this is the percent of noise within
+            noise_pct (float): this is the percent of noise within
             the corpus. by default, this is set to .2, it can also be set to
             'auto' where during the evaluate step, paretonmf will check for
             the percentage of the unique corpus that contributes to 80
             percent of the content in the corpus
             (so as to follow the 80:20 pareto principle)
+            there is also an auto setting on this where what IPNMF will
+            do is to select the percentage of document that hold 80 percent
+            of the content of all the tokens inside the matrix so that
+            in that way, the 80:20 rule pertains to the content of the
+            documents rather than making it a fast 80 percent of the
+            total document count
 
-            step - int: this is the size of the step between how many
+            step (int): this is the size of the step between how many
             topics are extracted from NMF at a time, by default this is
             set to 2, but can be tuned to a larger number if it is
             estimated that there are many topics in the corpus
+            there is also an auto setting for this where, for now,
+            IPNMF will set the step size to be based on the bag of words
+            length and the corpus length where auto is computed as
+            the bag of words count divided by the corpus length
 
-            start - int: this is the number of topics to be initially
+            start (int): this is the number of topics to be initially
             extracted from the corpus using NMF, this is initially set
             to 2 but can be tuned if it is estimated that there are
             many topics in the corpus
 
-            pnmf_verbose - boolean: True to have the model give the
+            pnmf_verbose (boolean): True to have the model give the
             status per iteration else false
 
-            max_iter - int: this is the maximum number of iterations
+            max_iter (int): this is the maximum number of iterations
             the model will make in determining the number of topics
             to extract
 
@@ -162,7 +169,7 @@ class ParetoNMF(object):
             .. versionchanged:: 0.17
                Deprecated Projected Gradient solver.
                Use Coordinate Descent solver instead.
-        '''
+        """
         self.noise_pct = noise_pct
         self.step = step
         self.start = start
@@ -184,14 +191,15 @@ class ParetoNMF(object):
         self.verbose = verbose
 
     def evaluate(self, matrix):
-        '''
-        INPUT
-             - matrix: can be a sparse matrix
-        OUTPUT
-             - W matrix
-        Returns the W matrix for the heuristically determined topic
-        count
-        '''
+        """
+        Args:
+            matrix (2d array): this is the matrix of documents and tokens
+            where the number of topics needs to be determined, this has worked
+            with compressed sparse row matrices before
+        Returns
+            topic_count (int): this is the number of topics that IPNMF was
+            able to pick up heuristically
+        """
         if self.noise_pct == 'auto':
             self._pareto_corpus_content(matrix, .8)
         if self.step == 'auto':
@@ -240,14 +248,12 @@ class ParetoNMF(object):
                 self.previous_nmf = nmf
 
     def _stopping_condition(self):
-        '''
-        INPUT
-             - none
-        OUTPUT
-             - stop: boolean
-
-        Returns true if the stopping condition has been met else false
-        '''
+        """
+        Args:
+            None
+        Returns:
+            boolean: True if the stopping condition has been met else False
+        """
         sorted_topics = np.sort(np.array(self.topic_summary.values()))[::-1]
         cum_sum = np.cumsum(sorted_topics)
         if self.pnmf_verbose:
@@ -260,20 +266,23 @@ class ParetoNMF(object):
             return False
 
     def _pareto_corpus_content(self, matrix, n_percent):
-        '''
-        INPUT
-             - tfidf_matrix: this is a sparse matrix made
-             by the tfidf vectorizer
-             - n_percent: this is a tunable value that is used as the cut
-             off for determining the percentage of documents that holds this
-             n information based on the distribution of documents and
-             their tokens inside them
-        OUTPUT
-             - float
-        Returns the percentage of documents that contribute to
-        tail of the information, which is the inverse of the precent of
-        documents that contribute to n_percent of the information
-        '''
+        """
+        This private function computes for the percentage of the total
+        corpus to consider for the "bulk" of the content by looking
+        at what percentage of total documents holds n_percent, set to
+        80 percent for now, holds 80 percent of the total token content.
+        The inverse of this percentage is saved in self.noise_pct
+
+        Args:
+            matrix (2d array): this can be the csr matrix that has the
+            tfidf or tf matrix information
+            n_percent (float): this is a tunable value that is used as the cut
+            off for determining the percentage of documents that holds this
+            n information based on the distribution of documents and
+            their tokens inside them
+        Returns:
+            None
+        """
         sparse_matrix = sparse.csr_matrix(matrix)
         sparse_matrix = np.unique(sparse_matrix)[0]
         total_documents = sparse_matrix.shape[0]
@@ -286,70 +295,17 @@ class ParetoNMF(object):
         self.noise_pct = 1-float(majority_docs)/total_documents
 
     def _determine_auto_step_size(self, matrix):
-        '''
-        INPUT
-             - the matrix
-        OUTPUT
-             - int, the step size to take
+        """
+        This private function computes the auto step size to take when the
+        setting for step size is auto. This saves the step size that
+        heuristically can be considered given the shape of the matrix from
+        which topics are extracted in the self.step attribute
 
-        Returns the step size that heuristically can be considered
-        given the shape of the tfidf matrix
-        '''
+        Args:
+            matrix (2d array): matrix to have the topics extracted from
+        Returns
+            None
+        """
         self.step = int(round(float(matrix.shape[1])/matrix.shape[0]))
         if self.step == 0:
             self.step = 1
-
-
-def create_tweet_list_from_mongo(dbname, collection):
-    '''
-    INPUT
-         - dbname: this is the name of the database
-         to draw the tweets from
-         - collection: this is the name of the collection
-         to draw the tweets from
-    OUTPUT
-         - tweet_list, list
-    Returns tweet_list - the list of tweets in that mongodb
-    '''
-    client = MongoClient()
-    tweet_list = []
-    db = client[dbname]
-    tab = db[collection].find()
-    for document in tab:
-        tweet_list.append(document['text'])
-    tweet_list = [unidecode(document) for document in
-                  tweet_list if
-                  type(unidecode(document)) == str]
-    return tweet_list
-
-
-if __name__ == "__main__":
-    df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
-    df.text = df.text.apply(str)
-    df['length'] = df.text.apply(len)
-    df = df.query('length > 1')
-    documents = [document for document
-                 in df.text.values if type(document) == str]
-    tokenized_tweets = multiprocess_tokenize_tweet(documents)
-    unique_tweets = np.unique(tokenized_tweets)
-    tfidf, tfidf_matrix = tfidf_vectorizer(unique_tweets)
-    pnmf = ParetoNMF(noise_pct='auto', step='auto', pnmf_verbose=True)
-    n_topics = pnmf.evaluate(tfidf_matrix)
-    tfidf_matrix = tfidf.transform(tokenized_tweets)
-    W = pnmf.nmf.transform(tfidf_matrix)
-    H = pnmf.nmf.components_
-    topic_label = np.apply_along_axis(func1d=np.argmax,
-                                      axis=1, arr=W)
-    word_importance = compute_for_word_importance(tfidf_matrix, topic_label)
-    tweet_dict = get_important_tweets_and_words_for_barplot(tfidf, H, W,
-                                                            tfidf_matrix,
-                                                            topic_label,
-                                                            word_importance,
-                                                            df,
-                                                            verbose=True,
-                                                            detailed=False)
-    rf_df = compute_real_and_fake_tweets_within_each_topics(topic_label, df)
-    make_stacked_barplot(rf_df, tweet_dict,
-                         searchQuery='racism')
-    make_stacked_barplot_percentage(rf_df, tweet_dict,
-                                    searchQuery='racism')
