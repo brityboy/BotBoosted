@@ -170,12 +170,12 @@ The backbone of this app is made in python, whose modules are as follows:
 
 10. main.py
     - This module integrates all of the different modules into two main functions:
-      a) botboosted_v3 - this function allows a user to specify a search, and then
-         this will download the tweets, classify them, and visualize them
-         as different subtopics, and summarize them with exemplary tweets
-      b) botboosted_demonstration_v3 - this function replicates the previous
-         function but works on tweets inside a local mongodb rather than
-         tweets that are downloaded through twitter's api
+      - botboosted - this function allows a user to specify a search, and then
+        this will download the tweets, classify them, and visualize them
+        as different subtopics, and summarize them with exemplary tweets
+      - botboosted_demonstration - this function replicates the previous
+        function but works on tweets inside a local mongodb rather than
+        tweets that are downloaded through twitter's api
 
 ### Borrowed modules
 
@@ -226,12 +226,7 @@ classifier, the random forest ensemble
 this module is used to make predictions using the models made by the
 deprecated classification_model.py module
 
-7. TweetNLP.py
-this module is a borrowed module from
-Aritter. Twitter NLP. (2016). Github repository https://github.com/aritter/twitter_nlp
-and was deprecated in favor of emoticons and twokenize
-
-8. load_test_data.py
+7. load_test_data.py
  this module was used to load class A and class B feature data from a mongodb
  and process them for the predictions that will be made by the deprecated
  classified model module
