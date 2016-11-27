@@ -1,25 +1,27 @@
 import dill as pickle
-# from lightweight_classifier import convert_created_time_to_datetime
 import pandas as pd
 import numpy as np
-from tweet_text_processor import split_list
-import multiprocessing as mp
 import time
-# import pandas as pd
 from datetime import datetime
 
 
-def process_tweet(tweet):
-    '''
-    INPUT
-         - tweet: json object from twitter's api
-    OUTPUT
-         - user_vector = np.array for predictions
-         - text_vector = np.array with tweet_information
+"""
+This module is responsible for processing each json object into the different
+features necessary for the prediction model module so that the random forest
+ensemble can make predictions on newly downloaded tweets, or tweets store in
+a mongo database, so long as they are in the form of json objects in a list
+"""
 
-    Returns a json from twitter's api into the necessary row format needed
-    for predictions
-    '''
+
+def process_tweet(tweet):
+    """
+    Args:
+        tweet (json): single tweet object downloaded from twitter's api
+    Returns:
+        vectorized_tweet (2d numpy array): vectorized tweet in the format
+        needed for predictions and for further processing, as is needed
+        by the first and earlier version of making predictions
+    """
     profile_use_background_image = \
         tweet['user']['profile_use_background_image']
     geo_enabled = tweet['user']['geo_enabled']
@@ -60,18 +62,15 @@ def process_tweet(tweet):
 
 
 def process_tweet_v2(tweet):
-    '''
-    INPUT
-         - tweet: json object from twitter's api
-    OUTPUT
-         - user_vector = np.array for predictions
-         - text_vector = np.array with tweet_information
-
-    Returns a json from twitter's api into the necessary row format needed
-    for predictions that takes into account the additional features
-    that look at behavior versus network information (i.e. tweets per
-    follower, likes per friend, etc)
-    '''
+    """
+    Args:
+        tweet (json): single tweet object downloaded from twitter's api
+    Returns:
+        vectorized_tweet (2d numpy array): the necessary row format needed
+            for predictions that takes into account the additional features
+            that look at behavior versus network information (i.e. tweets per
+            follower, likes per friend, etc)
+    """
     profile_use_background_image = \
         tweet['user']['profile_use_background_image']
     geo_enabled = tweet['user']['geo_enabled']
@@ -121,50 +120,25 @@ def process_tweet_v2(tweet):
 
 
 def convert_created_time_to_datetime(datestring):
-    '''
-    INPUT
-         - datestring: a string object either as a date or
+    """
+    Args:
+        datestring (str): a string object either as a date or
          a unix timestamp
-    OUTPUT
-         - a datetime object
-
-    Returns a pandas datetime object
-    '''
+    Returns:
+        a pandas datetime object
+    """
     if len(datestring) == 30:
         return pd.to_datetime(datestring)
     else:
         return pd.to_datetime(datetime.fromtimestamp(int(datestring[:10])))
 
 
-def multiprocess_process_tweet(tweet_list):
-    '''
-    INPUT
-         - tweet_list: this is a list of the documents to be tweet tokenized
-    OUTPUT
-         - list
-
-    Return a list of processed tweets done with multiprocessing
-    '''
-    n_processes = mp.cpu_count()
-    p = mp.Pool(n_processes)
-    split_docs = np.array(split_list(tweet_list, n_processes))
-    processed_tweets = p.map(process_tweet, split_docs)
-    return [item for row in processed_tweets for item in row]
-
 if __name__ == "__main__":
-    # df = pd.read_csv('data/training_user_tweet_data.csv')
     start = time.time()
     with open('data/test_tweet_scrape.pkl', 'r+') as f:
         tweet_list = pickle.load(f)
     print("load pkl file: ", time.time() - start)
-    # tweet = tweet_list[0]
-    # tweetarray = process_tweet(tweet)
-    # print(tweetarray)
     start = time.time()
-    # tweets_for_prediction = multiprocess_process_tweet(tweet_list)
     processed_tweets = np.array([process_tweet_v2(tweet)
                                  for tweet in tweet_list])
-    # for i, tweet in enumerate(tweet_list):
-    #     print i
-    #     process_tweet_v2(tweet)
-    # print("process tweets tweets: ", time.time() - start)
+    print("process tweets tweets: ", time.time() - start)
