@@ -837,6 +837,7 @@ def process_unique_tweets_through_paretonmf(df, verbose=False):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
+    # df = pd.read_csv('data/clinton_predicted_tweets_v2.csv')
     # df = pd.read_csv('data/trump_predicted_tweets_v2.csv')
+    df = pd.read_csv('data/pred_v2_make_money_work_at_home.csv')
     process_real_and_fake_tweets_w_plots(df, verbose=True)
