@@ -106,14 +106,24 @@ def fix_the_sequence_of_repeated_characters(word):
 
 def tokenize_tweet(text):
     """
-    INPUT
+    Args:
         text (str): this is the text string that makes up the entire tweet
-    Returns
+    Returns:
         text (str): this is the tokenized tweet WHERE the ff things have been
         done which are twitter specific:
          - url's are replaced with "url_"
          - hashtags are replaced with "hash_"
-         - url's are replaced with the word 'url'
+         - time objects are removed
+         - separators are removed
+         - numcommas are removed
+         - numnum (other numbers) are removed
+         - digits are removed
+         - user mentions are replaced with "user_"
+         - retweets are removed
+         - emoticons are replaced by the word they represent (happy, sad, etc)
+         - punctuation is removed
+         - words where a letter appears consecutively more than three times
+           is normalized by replacing it with only two occurrences
     """
     token_list = []
     text = text.replace('\n', ' ')
@@ -267,25 +277,39 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
                                                   word_importance, documents,
                                                   verbose=False):
     """
-
-    THIS FUNCTION IS DEPRECATED
-
-    INPUT
-         - tfidf: this is the tfidf object
-         - H: matrix, this is the topic matrix from NMF
-         - tfidf_matrix: this is the tfidf matrix
-         - topic_label: this is a list that has the topic label for each doc
-         - df: this dataframe has all the tweets
-         - documents: this is the list of documents in the df that were
-        filtered already
-         - verbose: to have the function print out its contnets
-         - detailed: to have the function compute for sentence importance using
-         the tfidf values and not just the W matrix values
-    OUTPUT
-         - tweet_dict: dictionary that has the ff keys:
-            a)
-    Returns the most important tweets per topic by getting the average tfidf
-    of the words in the sentence
+    Args:
+        tfidf (fit tfidf object): this is the tfidf object that was already
+        fit to the corpus
+        H (2d array): this is the topic matrix from NMF
+        tfidf_matrix (csr format matrix): this is the tfidf matrix
+        topic_label (1d array): this is a 1d array that has the topic label
+        for each doc
+        df (pandas dataframe): dataframe has the tweet content which includes
+        the screen_name, the user_id, the text, and the predicted value
+        verbose (boolean): True if to have the function print out the status
+        and False otherwise
+    Note:
+        This function was made to work with the plotting of the topics
+        and the tweets on PC1 and PC2, this method of visualizing the tweets
+        is still currently in development
+    Returns:
+        tweet_dict (dictionary): dictionary that has the ff keys: value pairs
+        a) exemplary_tweet:
+            keys: topic number, values: string containing the most important
+            real tweet
+        b) top_words:
+            keys: topic number, values: string containing the most important
+            words used in that topic as a string
+        c) topic_size_pct:
+            keys: topic number, values: float, the size of this topic
+            versus all the other topics
+        d) topic_size_n:
+            keys: topic number, values: the number of tweets in this topic
+        e) tweet_subset_sentimportance:
+            keys: topic number, values: a list of the tweet importances
+            for the tweets in this topic
+        f) topic_tweets:
+            keys: topic number, values: a list of the tweets in this topic
     """
     tweet_dict = defaultdict(dict)
     bag_of_words = np.array(map(unidecode, tfidf.get_feature_names()))
@@ -299,7 +323,6 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
         subset_sent_importance = sentimportance[topic_label == unique_topic]
         nsubtweets = subset_sent_importance.shape[0]
         exemplary_tweet = subset_tweet_array[np.argmax(subset_sent_importance)]
-        # tweet_dict['exemplary_tweet'][i] = exemplary_tweet
         tweet_dict['exemplary_tweet'][i] = blockify_tweet(exemplary_tweet)
         top_words = \
             bag_of_words[np.argsort(word_importance*H[i])[::-1]][:3]
@@ -322,19 +345,25 @@ def get_most_important_tweets_and_words_per_topic(tfidf, H, W, tfidf_matrix,
 
 
 def extract_tweets_from_dataframe(df, verbose=False):
-    '''
-
-    THIS FUNCTION IS DEPRECATED
-
-    INPUT
-         - df - dataframe
-    OUTPUT
-         - prints the top tweets from a dataframe given the topic-count
-         and plots them on PC1 and PC2 in order to understand the tweets
-         inside the topic
-
-    Return nothing
-    '''
+    """
+    Args:
+        df (pandas dataframe): dataframe that has the text, the username,
+        the predicted value, so that the tweets can be processed into
+        subtopics
+        verbose (boolean): True if the function will be verbose in its
+        reporting of the status of each procedure else False
+        searchQuery (string): this is the searched query and its presence
+        here is for it to included in the title of the barplot
+    Returns:
+        nothing, plots the topics and the tweets on PC1 and PC2 after running
+        the corpus through multiple functions, namely:
+        a) process_unique_tweets_through_paretonmf
+        b) compute_for_word_importance
+        c) get_important_tweets_and_words_for_barplot
+        d) compute_real_and_fake_tweets_within_each_topics
+        e) make_stacked_barplot
+        f) make_stacked_barplot_percentage
+    """
     df.text = df.text.apply(str)
     df['length'] = df.text.apply(len)
     df = df.query('length > 1')
@@ -436,20 +465,18 @@ def extract_tweets_from_dataframe_for_barplots(df, verbose=False,
 
 
 def process_real_and_fake_tweets(df, verbose=False):
-    '''
-
-    THIS FUNCTION IS DEPRECATED
-
-    INPUT
-         - dataframe - must have the screen_name, the text, and the
-         pred value for a user so that it can be processed for
-         real and fake tweet exploration
-         - verbose: set this to true for it to print the output
-    OUTPUT
-         -
-
-    Returns none
-    '''
+    """
+    Args:
+        df (pandas dataframe): must have the screen_name, the text, and the
+        pred value for a user so that it can be processed for
+        real and fake tweet exploration
+        verbose (boolean): set this to true for it to print the output
+        searchQuery (string): this is an optional item that is used for web
+        searched topics so that the query appears in the plot titles
+    Returns:
+        Returns none, this divides the entire corpus into real and fake
+        tweets, and then plots the topics and the tweets onto PC1 and PC2
+    """
     df.text = df.text.apply(str)
     df['length'] = df.text.apply(len)
     df = df.query('length > 1')
