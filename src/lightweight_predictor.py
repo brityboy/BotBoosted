@@ -25,13 +25,6 @@ the tweet, and the prediction, for the next step in the process
 which is to process the tweet text data into the meaninful topics
 """
 
-history_model = load_pickled_model('models/account_history_rf_model.pkl')
-behavior_model = load_pickled_model('models/behavior_rate_rf_model.pkl')
-ensemble_model = load_pickled_model('models/ensemble_rf_model.pkl')
-history_model_v2 = load_pickled_model('models/account_history_rf_v2_model.pkl')
-behavior_model_v2 = load_pickled_model('models/behavior_rate_rf_v2_model.pkl')
-ensemble_model_v2 = load_pickled_model('models/ensemble_rf_v2_model.pkl')
-
 
 def load_pickled_model(filename):
     """
@@ -44,6 +37,14 @@ def load_pickled_model(filename):
         model = pickle.load(f)
     f.close()
     return model
+
+
+history_model = load_pickled_model('models/account_history_rf_model.pkl')
+behavior_model = load_pickled_model('models/behavior_rate_rf_model.pkl')
+ensemble_model = load_pickled_model('models/ensemble_rf_model.pkl')
+history_model_v2 = load_pickled_model('models/account_history_rf_v2_model.pkl')
+behavior_model_v2 = load_pickled_model('models/behavior_rate_rf_v2_model.pkl')
+ensemble_model_v2 = load_pickled_model('models/ensemble_rf_v2_model.pkl')
 
 
 def make_lightweight_predictions(tweet_list):

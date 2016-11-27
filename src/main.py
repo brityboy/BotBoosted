@@ -1,5 +1,5 @@
 import time
-from prediction_model import load_pickled_model
+from lightweight_predictor import load_pickled_model
 from prediction_model import load_processed_csv_for_predictions
 from prediction_model import create_dictionary_with_id_and_predictions
 from load_mongo_tweet_data import load_pred_dict_from_pickle, get_tweets
