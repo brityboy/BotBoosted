@@ -258,7 +258,13 @@ class ParetoNMF(object):
         cum_sum = np.cumsum(sorted_topics)
         if self.pnmf_verbose:
             print('{} is the topic distribution'.format(sorted_topics))
-        topics_with_rich_content = np.sum(cum_sum > self.rich_content)
+        topics_with_rich_content = np.sum(cum_sum < self.rich_content)
+        string_rc = '{} is the current count of topics with rich content'
+        string = 'there are {} topics within the bulk of the topic distributon'
+        if self.pnmf_verbose:
+            print(string_rc.format(self.rich_topics))
+            print(string.format(topics_with_rich_content))
+            print('\n')
         if topics_with_rich_content == self.rich_topics:
             return True
         else:
