@@ -104,6 +104,7 @@ def botboosted(searchQuery, verbose=False, save=False):
         print('\n')
         print("entire thing took: ", time.time() - totalstart)
 
+
 if __name__ == "__main__":
     botboosted('make money online fast',
                verbose=True,
