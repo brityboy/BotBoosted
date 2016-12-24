@@ -526,6 +526,7 @@ def create_ensemble_model():
     write_model_to_pkl(modelb, 'behavior_rate_rf_v2')
     write_model_to_pkl(model_ens, 'ensemble_rf_v2')
 
+
 if __name__ == "__main__":
     df = pd.read_csv('data/training_user_tweet_data.csv')
     cyrusdf = pd.read_csv('data/mileycyrususers.csv')
